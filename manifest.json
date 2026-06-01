@@ -10,8 +10,8 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "https://raw.githubusercontent.com/anubhavkumar2688-dot/Chant-counter-/main/icon-192.png",
-      "sizes": "192x192",
+      "src": "https://www.gstatic.com/images/icons/material/system/2x/self_improvement_black_48dp.png",
+      "sizes": "48x48",
       "type": "image/png"
     }
   ]

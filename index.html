@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#f5efe0">
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="/Chant-counter-/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -3216,9 +3216,10 @@ function startApp() {
   if(nav) nav.style.display='none';
 
   // onAuthStateChanged — sirf ONCE register karo, sab handle karta hai
+  // redirect, popup, already-logged-in, logged-out — sab
   onAuthStateChanged(auth, (user) => {
     if(user) {
-      // User logged in hai — onboard_done force set karo (redirect ke baad loop fix)
+      // Logged in — onboard skip karo hamesha (redirect loop fix)
       localStorage.setItem('dc_onboard_done','1');
       handleAuthUser(user);
     } else {
