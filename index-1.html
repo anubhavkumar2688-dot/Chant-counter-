@@ -1,0 +1,3307 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Daily Chant</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f5efe0">
+<link rel="manifest" href="/manifest.json">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+:root {
+  --cream: #f7f0e2;
+  --cream2: #ede3cc;
+  --cream3: #faf5ec;
+  --saffron: #c8410a;
+  --saffron2: #e04d0f;
+  --gold: #b8860b;
+  --gold2: #d4a017;
+  --brown: #5c3d1e;
+  --brown2: #3d2409;
+  --white: #fff;
+  --dark: #1a0a00;
+  --success: #4CAF50;
+  --danger: #f44336;
+  --chat-bg: #0d0d0d;
+  --chat-surface: #1a1a1a;
+  --chat-border: #2a2a2a;
+  --chat-accent: #ff6b00;
+  --chat-text: #f0f0f0;
+  --chat-muted: #666;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--brown2); height:100dvh; overflow:hidden; }
+
+/* ===== SCREENS ===== */
+.screen { position:fixed; inset:0; display:flex; flex-direction:column; opacity:0; pointer-events:none; transition:opacity 0.35s ease; background:var(--cream); z-index:1; }
+.screen.active { opacity:1; pointer-events:all; z-index:10; }
+
+/* ===== ONBOARDING ===== */
+#onboard {
+  background: linear-gradient(160deg, #fff8ed 0%, #f7f0e2 50%, #f0e6d0 100%);
+}
+.ob-slide {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:40px 28px 32px; text-align:center; gap:20px;
+  position:relative;
+}
+.ob-slide::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:50%;
+  background: radial-gradient(ellipse at 50% 0%, rgba(200,65,10,0.07) 0%, transparent 70%);
+  pointer-events:none;
+}
+.ob-icon {
+  font-size:80px;
+  animation:float 3s ease-in-out infinite;
+  filter: drop-shadow(0 8px 20px rgba(200,65,10,0.25));
+}
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+.ob-title {
+  font-size:24px; font-weight:700;
+  background: linear-gradient(135deg, var(--saffron), var(--gold2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  line-height:1.2;
+}
+.ob-desc { font-size:14px; color:var(--brown); line-height:1.8; max-width:280px; }
+.ob-demo {
+  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,248,237,0.9));
+  border:1.5px dashed var(--gold2);
+  border-radius:18px; padding:14px 20px;
+  font-size:13px; color:var(--brown);
+  width:100%; backdrop-filter:blur(4px);
+  box-shadow:0 2px 12px rgba(200,65,10,0.06);
+}
+.ob-dots { display:flex; gap:8px; justify-content:center; }
+.ob-dot { width:8px; height:8px; border-radius:50%; background:var(--cream2); transition:all 0.35s cubic-bezier(.34,1.56,.64,1); }
+.ob-dot.active { background:var(--saffron); width:28px; border-radius:4px; }
+.ob-btn {
+  width:100%; padding:17px; border-radius:22px; border:none;
+  background: linear-gradient(135deg, var(--saffron2), var(--saffron));
+  color:#fff; font-size:16px; font-weight:600;
+  cursor:pointer; font-family:'Poppins',sans-serif;
+  touch-action:manipulation; -webkit-appearance:none;
+  box-shadow: 0 6px 24px rgba(200,65,10,0.35), 0 2px 6px rgba(200,65,10,0.2);
+  letter-spacing:0.3px;
+  transition:transform 0.12s, box-shadow 0.12s;
+}
+.ob-btn:active { transform:scale(0.97); box-shadow:0 3px 12px rgba(200,65,10,0.25); }
+.ob-skip { font-size:12px; color:var(--gold); cursor:pointer; padding:12px; touch-action:manipulation; display:inline-block; opacity:0.8; }
+
+/* ===== CREATE PASSWORD ===== */
+#createPass {
+  background: linear-gradient(160deg, #fff8ed 0%, #f7f0e2 100%);
+  align-items:center; justify-content:center; gap:0;
+}
+.cp-top { text-align:center; padding:40px 24px 16px; }
+.cp-title { font-size:22px; font-weight:700; color:var(--brown2); }
+.cp-sub { font-size:13px; color:var(--brown); margin-top:6px; line-height:1.6; }
+.cp-dots { display:flex; gap:18px; justify-content:center; margin:28px 0 20px; }
+.cp-dot {
+  width:16px; height:16px; border-radius:50%;
+  border:2px solid var(--gold2);
+  background:transparent; transition:all 0.25s cubic-bezier(.34,1.56,.64,1);
+}
+.cp-dot.filled {
+  background: linear-gradient(135deg, var(--saffron2), var(--saffron));
+  border-color:var(--saffron);
+  box-shadow:0 0 12px rgba(200,65,10,0.5), 0 0 4px rgba(200,65,10,0.3);
+  transform:scale(1.1);
+}
+.cp-dot.error { background:var(--danger); border-color:var(--danger); animation:shake 0.4s; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-7px)} 75%{transform:translateX(7px)} }
+.cp-step {
+  font-size:11px; color:var(--gold);
+  margin-bottom:8px; letter-spacing:2px;
+  text-transform:uppercase; font-weight:500;
+}
+.keypad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:0 24px 32px; width:100%; max-width:320px; }
+.key {
+  height:66px; border-radius:18px;
+  border:1.5px solid rgba(200,150,10,0.2);
+  background: linear-gradient(145deg, #ffffff, #faf5ec);
+  color:var(--brown2); font-size:24px; font-weight:600;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  user-select:none; transition:all 0.12s;
+  box-shadow:0 2px 10px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  font-family:'Poppins',sans-serif; touch-action:manipulation; -webkit-appearance:none;
+}
+.key:active {
+  background: linear-gradient(135deg, var(--saffron2), var(--saffron));
+  color:#fff; border-color:var(--saffron);
+  transform:scale(0.93);
+  box-shadow:0 4px 16px rgba(200,65,10,0.3);
+}
+.key.del { font-size:18px; color:var(--brown); }
+.key.emp { background:transparent; border-color:transparent; box-shadow:none; cursor:default; pointer-events:none; }
+
+/* ===== PROFILE SETUP ===== */
+#profileSetup { background: linear-gradient(160deg, #fff8ed 0%, #f7f0e2 100%); }
+.ps-header {
+  background: linear-gradient(135deg, var(--saffron2) 0%, var(--saffron) 60%, #a33208 100%);
+  padding:54px 24px 24px; color:#fff;
+  position:relative; overflow:hidden;
+}
+.ps-header::after {
+  content:'ॐ'; position:absolute; right:-10px; bottom:-20px;
+  font-size:100px; opacity:0.08; font-family:serif;
+  pointer-events:none;
+}
+.ps-title { font-size:21px; font-weight:700; letter-spacing:0.2px; }
+.ps-sub { font-size:12px; opacity:0.75; margin-top:5px; line-height:1.5; }
+.ps-body { flex:1; overflow-y:auto; padding:24px 20px; display:flex; flex-direction:column; gap:18px; }
+.ps-avatar-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+.ps-avatar {
+  width:88px; height:88px; border-radius:50%;
+  background: linear-gradient(135deg, var(--saffron2), var(--gold2));
+  display:flex; align-items:center; justify-content:center; font-size:38px;
+  cursor:pointer;
+  border:3px solid #fff;
+  box-shadow:0 6px 24px rgba(200,65,10,0.3), 0 2px 8px rgba(0,0,0,0.1);
+  position:relative; overflow:hidden; transition:transform 0.2s;
+}
+.ps-avatar:active { transform:scale(0.95); }
+.ps-avatar img { width:100%; height:100%; object-fit:cover; position:absolute; }
+.ps-avatar-hint { font-size:11px; color:var(--brown); opacity:0.8; }
+.ps-label { font-size:11px; font-weight:600; color:var(--brown); letter-spacing:1px; text-transform:uppercase; margin-bottom:5px; }
+.ps-input {
+  width:100%; padding:15px 18px; border-radius:16px;
+  border:1.5px solid rgba(200,150,10,0.25);
+  background: linear-gradient(145deg, #ffffff, #fdf9f2);
+  color:var(--brown2); font-size:15px; outline:none;
+  font-family:'Poppins',sans-serif;
+  box-shadow:0 2px 8px rgba(0,0,0,0.04);
+  transition:border-color 0.2s, box-shadow 0.2s;
+}
+.ps-input:focus { border-color:var(--saffron); box-shadow:0 0 0 3px rgba(200,65,10,0.1); }
+.ps-section-title { font-size:11px; font-weight:600; color:var(--brown); letter-spacing:1px; text-transform:uppercase; }
+.icon-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+.icon-opt { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; }
+.icon-circle {
+  width:58px; height:58px; border-radius:18px;
+  display:flex; align-items:center; justify-content:center; font-size:26px;
+  border:2px solid transparent;
+  background: linear-gradient(145deg, #ffffff, #fdf9f2);
+  box-shadow:0 2px 10px rgba(0,0,0,0.08);
+  transition:all 0.2s;
+}
+.icon-circle.selected { border-color:var(--saffron); background:#fff3e0; box-shadow:0 4px 14px rgba(200,65,10,0.2); }
+.icon-label { font-size:9px; color:var(--brown); font-weight:500; }
+.ps-save-btn {
+  width:100%; padding:17px; border-radius:22px; border:none;
+  background: linear-gradient(135deg, var(--saffron2), var(--saffron));
+  color:#fff; font-size:16px; font-weight:600;
+  cursor:pointer; font-family:'Poppins',sans-serif;
+  box-shadow:0 6px 24px rgba(200,65,10,0.35);
+  letter-spacing:0.3px; transition:transform 0.12s, box-shadow 0.12s;
+}
+.ps-save-btn:active { transform:scale(0.97); }
+
+/* ===== MAIN COUNTER ===== */
+#counter {
+  background: linear-gradient(170deg, #fff8ed 0%, #f7f0e2 55%, #f0e6d0 100%);
+}
+.counter-body {
+  flex:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:space-between;
+  padding:20px 16px 28px; overflow:hidden;
+  position:relative;
+}
+.counter-body::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:45%;
+  background: radial-gradient(ellipse at 50% -10%, rgba(200,65,10,0.06) 0%, transparent 70%);
+  pointer-events:none;
+}
+.counter-header { width:100%; display:flex; justify-content:space-between; align-items:center; }
+.app-title {
+  font-size:12px; font-weight:700;
+  background: linear-gradient(90deg, var(--saffron), var(--gold2));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  letter-spacing:4px; text-transform:uppercase;
+}
+.user-name-display { font-size:12px; color:var(--brown); font-weight:500; }
+
+/* Circle progress */
+.circle-wrap { position:relative; width:190px; height:190px; }
+.circle-svg { width:190px; height:190px; transform:rotate(-90deg); }
+.circle-bg { fill:none; stroke:rgba(200,150,10,0.15); stroke-width:10; }
+.circle-fill {
+  fill:none;
+  stroke:url(#goldGrad);
+  stroke-width:10; stroke-linecap:round;
+  stroke-dasharray:534; stroke-dashoffset:534;
+  transition:stroke-dashoffset 0.5s cubic-bezier(.4,0,.2,1);
+  filter: drop-shadow(0 0 6px rgba(200,150,10,0.4));
+}
+.circle-count { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; }
+.count-num {
+  font-size:52px; font-weight:700;
+  background: linear-gradient(135deg, var(--saffron2), var(--saffron));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  line-height:1;
+}
+.count-of { font-size:12px; color:var(--brown); margin-top:3px; font-weight:500; }
+
+/* Mantra pill */
+.mantra-pill {
+  background: linear-gradient(145deg, #ffffff, #fdf9f2);
+  border:1.5px solid rgba(200,150,10,0.4);
+  border-radius:28px; padding:9px 20px;
+  font-size:12px; color:var(--brown2);
+  cursor:pointer; max-width:90%; text-align:center;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  box-shadow:0 2px 10px rgba(0,0,0,0.06);
+  font-weight:500; transition:all 0.2s;
+}
+.mantra-pill:active { transform:scale(0.97); }
+
+/* Sound btn */
+.sound-btn {
+  background: linear-gradient(135deg, var(--gold2), var(--gold));
+  color:#fff; border:none; border-radius:28px;
+  padding:9px 22px; font-size:12px; font-weight:600;
+  cursor:pointer; font-family:'Poppins',sans-serif;
+  box-shadow:0 4px 14px rgba(184,134,11,0.3);
+  letter-spacing:0.3px; transition:all 0.2s;
+}
+.sound-btn.off {
+  background: rgba(200,150,10,0.1);
+  color:var(--brown); box-shadow:none;
+  border:1.5px solid rgba(200,150,10,0.2);
+}
+
+/* TAP button */
+.tap-btn {
+  width:168px; height:168px; border-radius:50%;
+  background: radial-gradient(circle at 35% 35%, var(--saffron2), var(--saffron) 60%, #9e3208);
+  border:none; color:#fff;
+  cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  box-shadow:
+    0 10px 40px rgba(200,65,10,0.45),
+    0 4px 16px rgba(200,65,10,0.25),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+  transition:transform 0.1s, box-shadow 0.1s;
+  user-select:none; -webkit-user-select:none;
+  touch-action:manipulation; -webkit-appearance:none;
+  position:relative; overflow:hidden;
+}
+.tap-btn::before {
+  content:'';
+  position:absolute; top:12%; left:20%; width:50%; height:30%;
+  background: radial-gradient(ellipse, rgba(255,255,255,0.25), transparent);
+  border-radius:50%;
+}
+.tap-btn:active {
+  transform:scale(0.92);
+  box-shadow:0 5px 20px rgba(200,65,10,0.3), inset 0 2px 6px rgba(0,0,0,0.15);
+}
+.tap-om { font-size:48px; line-height:1; font-family:serif; text-shadow:0 2px 8px rgba(0,0,0,0.2); }
+.tap-text { font-size:10px; letter-spacing:4px; margin-top:4px; font-weight:600; opacity:0.85; }
+
+/* Restart */
+.restart-btn {
+  background:transparent;
+  border:1.5px solid rgba(200,150,10,0.4);
+  border-radius:28px; padding:9px 28px;
+  font-size:12px; color:var(--brown);
+  cursor:pointer; font-family:'Poppins',sans-serif;
+  transition:all 0.2s;
+}
+.restart-btn:active { background:rgba(200,150,10,0.08); }
+
+/* Floating mantra */
+.mantra-float {
+  position:fixed; top:40%; left:50%;
+  transform:translate(-50%,-50%) scale(0.8);
+  background:rgba(255,255,255,0.97);
+  border:2px solid rgba(200,150,10,0.4);
+  border-radius:22px; padding:14px 24px;
+  font-size:16px; color:var(--saffron); font-weight:600;
+  text-align:center; max-width:85vw;
+  z-index:100; opacity:0; pointer-events:none;
+  transition:all 0.3s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 12px 40px rgba(200,65,10,0.15), 0 4px 12px rgba(0,0,0,0.08);
+}
+.mantra-float.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+
+/* ===== MANTRA MODAL ===== */
+.modal-overlay { position:fixed; inset:0; background:rgba(61,36,9,0.45); backdrop-filter:blur(3px); z-index:200; display:none; align-items:flex-end; }
+.modal-overlay.show { display:flex; }
+.modal-sheet {
+  background: linear-gradient(160deg, #fff8ed, #f7f0e2);
+  border-radius:28px 28px 0 0;
+  width:100%; max-height:80vh; overflow-y:auto;
+  padding:8px 16px 32px;
+  box-shadow:0 -8px 40px rgba(0,0,0,0.15);
+}
+.modal-sheet::before {
+  content:''; display:block; width:40px; height:4px;
+  background:rgba(200,150,10,0.3); border-radius:2px;
+  margin:12px auto 16px;
+}
+.modal-title { font-size:15px; font-weight:700; color:var(--saffron); text-align:center; margin-bottom:16px; letter-spacing:0.3px; }
+.mantra-item {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:13px 16px; border-radius:16px; margin-bottom:8px;
+  background: linear-gradient(145deg, #ffffff, #fdf9f2);
+  border:1.5px solid transparent; cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,0.04);
+  transition:all 0.2s;
+}
+.mantra-item.selected { border-color:var(--saffron); background:linear-gradient(145deg, #fff5ec, #fff0e0); box-shadow:0 4px 16px rgba(200,65,10,0.12); }
+.mantra-text { font-size:13px; color:var(--brown2); font-weight:500; flex:1; line-height:1.4; }
+.mantra-add-row { display:flex; gap:8px; margin-top:14px; padding-top:14px; border-top:1.5px solid rgba(200,150,10,0.2); }
+.mantra-add-inp {
+  flex:1; padding:13px 16px; border-radius:14px;
+  border:1.5px solid rgba(200,150,10,0.25);
+  background: linear-gradient(145deg, #ffffff, #fdf9f2);
+  font-size:14px; color:var(--brown2); outline:none;
+  font-family:'Poppins',sans-serif;
+  transition:border-color 0.2s;
+}
+.mantra-add-inp:focus { border-color:var(--saffron); }
+.mantra-add-btn {
+  padding:13px 18px; border-radius:14px; border:none;
+  background: linear-gradient(135deg, var(--saffron2), var(--saffron));
+  color:#fff; font-weight:600; cursor:pointer;
+  font-family:'Poppins',sans-serif;
+  box-shadow:0 4px 14px rgba(200,65,10,0.3);
+}
+.modal-close {
+  width:100%; margin-top:12px; padding:13px; border-radius:16px; border:none;
+  background:rgba(200,150,10,0.1); color:var(--brown); font-size:14px;
+  cursor:pointer; font-family:'Poppins',sans-serif;
+  border:1.5px solid rgba(200,150,10,0.2);
+}
+
+/* ===== CHAT SCREEN ===== */
+#chatScreen { background:var(--chat-bg); }
+.chat-header { background:var(--chat-surface); border-bottom:1px solid var(--chat-border); padding:12px 16px; display:flex; align-items:center; gap:12px; flex-shrink:0; padding-top:max(12px, env(safe-area-inset-top)); }
+.chat-back { color:var(--chat-muted); font-size:20px; cursor:pointer; padding:4px; }
+.chat-av { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,var(--chat-accent),#f5429b); display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:#fff; flex-shrink:0; }
+.chat-hinfo { flex:1; }
+.chat-hname { font-size:14px; font-weight:600; color:var(--chat-text); }
+.chat-hst { font-size:11px; color:var(--chat-muted); }
+.chat-hst.online { color:var(--success); }
+.chat-hst.typing { color:var(--chat-accent); }
+.chat-hacts { display:flex; gap:10px; }
+.chat-icon-btn { width:40px; height:40px; border-radius:50%; border:1.5px solid var(--chat-accent); background:rgba(255,107,0,0.1); color:var(--chat-text); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px; transition:all 0.2s; touch-action:manipulation; }
+.chat-icon-btn:active { background:var(--chat-accent); transform:scale(0.9); }
+
+.msgs-area { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:6px; scroll-behavior:smooth; }
+.msgs-area::-webkit-scrollbar { display:none; }
+
+.msg-wrap { display:flex; flex-direction:column; max-width:78%; animation:msgIn 0.2s ease; }
+@keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.msg-wrap.me { align-self:flex-end; align-items:flex-end; }
+.msg-wrap.them { align-self:flex-start; align-items:flex-start; }
+.msg-bubble { padding:10px 14px; border-radius:18px; font-size:14px; line-height:1.5; word-break:break-word; position:relative; }
+.msg-wrap.me .msg-bubble { background:var(--chat-accent); color:#fff; border-bottom-right-radius:4px; }
+.msg-wrap.them .msg-bubble { background:var(--chat-surface); color:var(--chat-text); border:1px solid var(--chat-border); border-bottom-left-radius:4px; }
+.msg-meta { display:flex; align-items:center; gap:4px; margin-top:2px; padding:0 4px; }
+.msg-time { font-size:10px; color:var(--chat-muted); }
+.msg-tick { font-size:10px; }
+.msg-tick.sent { color:var(--chat-muted); }
+.msg-tick.delivered { color:var(--chat-muted); }
+.msg-tick.seen { color:#4fc3f7; }
+
+.sys-msg { align-self:center; font-size:11px; color:var(--chat-muted); background:var(--chat-surface); border:1px solid var(--chat-border); padding:4px 14px; border-radius:20px; }
+
+/* Reply preview */
+.reply-preview { background:rgba(255,107,0,0.1); border-left:3px solid var(--chat-accent); border-radius:0 10px 10px 0; padding:6px 10px; margin-bottom:4px; font-size:11px; color:var(--chat-muted); }
+
+/* Chat input */
+.chat-input-bar { background:var(--chat-surface); border-top:1px solid var(--chat-border); padding:10px 12px max(20px,env(safe-area-inset-bottom)); display:flex; align-items:flex-end; gap:8px; flex-shrink:0; }
+.reply-bar { background:rgba(255,107,0,0.1); border-left:3px solid var(--chat-accent); padding:8px 12px; font-size:12px; color:var(--chat-muted); display:flex; justify-content:space-between; align-items:center; }
+.reply-close { color:var(--chat-muted); cursor:pointer; font-size:16px; }
+.attach-btn { width:44px; height:44px; border-radius:50%; border:1px solid var(--chat-border); background:var(--chat-bg); color:var(--chat-muted); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:20px; flex-shrink:0; touch-action:manipulation; }
+.attach-btn:active { border-color:var(--chat-accent); color:var(--chat-accent); }
+.msg-inp { flex:1; background:var(--chat-bg); border:1px solid var(--chat-border); border-radius:20px; padding:10px 16px; color:var(--chat-text); font-family:'Poppins',sans-serif; font-size:14px; outline:none; resize:none; max-height:100px; line-height:1.4; }
+.msg-inp:focus { border-color:var(--chat-accent); }
+.msg-inp::placeholder { color:var(--chat-muted); }
+.send-btn { width:44px; height:44px; border-radius:50%; border:none; background:var(--chat-accent); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px; flex-shrink:0; touch-action:manipulation; -webkit-appearance:none; transition:transform 0.1s; }
+.send-btn:active { transform:scale(0.9); }
+
+/* File/Image messages */
+.msg-img { max-width:200px; max-height:220px; border-radius:14px; object-fit:cover; cursor:pointer; }
+.file-msg { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:14px; text-decoration:none; }
+.msg-wrap.me .file-msg { background:var(--chat-accent); color:#fff; }
+.msg-wrap.them .file-msg { background:var(--chat-surface); color:var(--chat-text); border:1px solid var(--chat-border); }
+
+/* ===== CALL OVERLAY — REMOVED ===== */
+#callOverlay { display:none !important; }
+
+
+
+/* ===== PEOPLE SCREEN ===== */
+#peopleScreen { background:var(--chat-bg); }
+.people-header { background:var(--chat-surface); border-bottom:1px solid var(--chat-border); padding:48px 16px 12px; }
+.people-title { font-size:18px; font-weight:700; color:var(--chat-accent); }
+.search-bar { background:var(--chat-bg); border:1px solid var(--chat-border); border-radius:12px; padding:10px 14px; color:var(--chat-text); font-family:'Poppins',sans-serif; font-size:14px; outline:none; width:100%; margin-top:10px; }
+.search-bar::placeholder { color:var(--chat-muted); }
+.search-bar:focus { border-color:var(--chat-accent); }
+.people-body { flex:1; overflow-y:auto; padding:12px; }
+.section-label { font-size:11px; color:var(--chat-muted); letter-spacing:2px; text-transform:uppercase; margin:8px 0 6px; padding:0 4px; }
+.user-row { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:14px; background:var(--chat-surface); border:1px solid var(--chat-border); margin-bottom:8px; }
+.u-av { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,var(--chat-accent),#f5429b); display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:#fff; flex-shrink:0; overflow:hidden; }
+.u-av img { width:100%; height:100%; object-fit:cover; }
+.u-info { flex:1; }
+.u-name { font-size:14px; font-weight:600; color:var(--chat-text); }
+.u-status { font-size:11px; color:var(--chat-muted); }
+.u-status.online { color:var(--success); }
+.follow-btn { padding:6px 14px; border-radius:20px; border:none; font-size:12px; font-weight:600; cursor:pointer; font-family:'Poppins',sans-serif; }
+.follow-btn.follow { background:var(--chat-accent); color:#fff; }
+.follow-btn.unfollow { background:transparent; border:1px solid var(--chat-border); color:var(--chat-muted); }
+.chat-btn { padding:6px 14px; border-radius:20px; border:1px solid var(--chat-accent); font-size:12px; font-weight:600; cursor:pointer; color:var(--chat-accent); background:transparent; font-family:'Poppins',sans-serif; margin-right:6px; }
+
+/* ===== SETTINGS SCREEN ===== */
+#settingsScreen { background:var(--chat-bg); }
+.settings-header { background:var(--chat-surface); border-bottom:1px solid var(--chat-border); padding:48px 16px 16px; }
+.settings-title { font-size:18px; font-weight:700; color:var(--chat-accent); }
+.settings-body { flex:1; overflow-y:auto; padding:16px; }
+.settings-profile { display:flex; align-items:center; gap:14px; background:var(--chat-surface); border:1px solid var(--chat-border); border-radius:16px; padding:14px; margin-bottom:16px; cursor:pointer; }
+.settings-av { width:50px; height:50px; border-radius:50%; background:linear-gradient(135deg,var(--chat-accent),#f5429b); display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:#fff; overflow:hidden; flex-shrink:0; }
+.settings-av img { width:100%; height:100%; object-fit:cover; }
+.settings-name { font-size:15px; font-weight:600; color:var(--chat-text); }
+.settings-id { font-size:11px; color:var(--chat-muted); }
+.settings-section { margin-bottom:16px; }
+.settings-section-title { font-size:11px; color:var(--chat-muted); letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; padding:0 4px; }
+.settings-row { display:flex; align-items:center; justify-content:space-between; padding:14px 14px; background:var(--chat-surface); border:1px solid var(--chat-border); border-radius:12px; margin-bottom:6px; cursor:pointer; }
+.settings-row-left { display:flex; align-items:center; gap:10px; }
+.settings-row-icon { font-size:18px; }
+.settings-row-text { font-size:14px; color:var(--chat-text); }
+.settings-row-sub { font-size:11px; color:var(--chat-muted); }
+.settings-arrow { color:var(--chat-muted); font-size:16px; }
+.toggle { width:44px; height:24px; background:var(--chat-border); border-radius:12px; position:relative; cursor:pointer; transition:background 0.3s; flex-shrink:0; }
+.toggle.on { background:var(--chat-accent); }
+.toggle::after { content:''; width:18px; height:18px; background:#fff; border-radius:50%; position:absolute; top:3px; left:3px; transition:left 0.3s; box-shadow:0 1px 4px rgba(0,0,0,0.2); }
+.toggle.on::after { left:23px; }
+.icon-picker { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:8px; }
+.icon-pick-item { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; }
+.icon-pick-circle { width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:24px; border:2px solid transparent; background:var(--chat-surface); transition:all 0.2s; }
+.icon-pick-circle.selected { border-color:var(--chat-accent); background:rgba(255,107,0,0.1); }
+
+/* ===== CHATS LIST ===== */
+#chatsListScreen { background:var(--chat-bg); }
+.chats-header { background:var(--chat-surface); border-bottom:1px solid var(--chat-border); padding:48px 16px 12px; display:flex; justify-content:space-between; align-items:flex-end; }
+.chats-title { font-size:18px; font-weight:700; color:var(--chat-accent); }
+.new-chat-btn { background:var(--chat-accent); color:#fff; border:none; border-radius:20px; padding:6px 14px; font-size:12px; cursor:pointer; font-family:'Poppins',sans-serif; }
+.chat-list-body { flex:1; overflow-y:auto; padding:8px 12px; }
+.chat-preview { display:flex; align-items:center; gap:12px; padding:12px; border-radius:14px; cursor:pointer; transition:background 0.15s; }
+.chat-preview:active { background:var(--chat-surface); }
+.cp-av { width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,var(--chat-accent),#f5429b); display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:#fff; flex-shrink:0; overflow:hidden; position:relative; }
+.cp-av img { width:100%; height:100%; object-fit:cover; }
+.cp-online { position:absolute; bottom:1px; right:1px; width:10px; height:10px; border-radius:50%; background:var(--success); border:2px solid var(--chat-bg); }
+.cp-info { flex:1; min-width:0; }
+.cp-name { font-size:14px; font-weight:600; color:var(--chat-text); }
+.cp-last { font-size:12px; color:var(--chat-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+.cp-right { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+.cp-time { font-size:10px; color:var(--chat-muted); }
+.unread-badge { background:var(--chat-accent); color:#fff; border-radius:10px; padding:2px 9px; font-size:10px; font-weight:700; letter-spacing:0.3px; }
+.empty-chats { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; gap:12px; color:var(--chat-muted); padding:40px; text-align:center; }
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav {
+  position:fixed; bottom:0; left:0; right:0;
+  background:rgba(20,20,20,0.97);
+  backdrop-filter:blur(12px);
+  border-top:1px solid rgba(255,107,0,0.12);
+  display:flex; z-index:150;
+  padding-bottom:env(safe-area-inset-bottom);
+  box-shadow:0 -4px 24px rgba(0,0,0,0.3);
+}
+.bn-item {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:10px 0 8px; cursor:pointer; color:var(--chat-muted);
+  font-size:10px; gap:3px; transition:color 0.2s;
+  -webkit-tap-highlight-color:transparent; position:relative;
+  font-weight:500; letter-spacing:0.3px;
+}
+.bn-item .bn-icon { font-size:22px; line-height:1; transition:transform 0.2s; }
+.bn-item.active { color:var(--chat-accent); }
+.bn-item.active .bn-icon { transform:scale(1.1); }
+.bn-badge {
+  position:absolute; top:6px; right:calc(50% - 16px);
+  background:#25D366; border-radius:50%; width:9px; height:9px;
+  display:none; border:1.5px solid rgba(20,20,20,0.97);
+}
+.screen.has-nav { padding-bottom:62px; }
+
+/* ===== TOAST ===== */
+.toast {
+  position:fixed; bottom:88px; left:50%;
+  transform:translateX(-50%) translateY(12px);
+  background:rgba(30,20,10,0.95);
+  backdrop-filter:blur(8px);
+  border:1px solid rgba(255,107,0,0.2);
+  color:var(--chat-text);
+  padding:11px 22px; border-radius:24px; font-size:13px;
+  opacity:0; transition:all 0.3s cubic-bezier(.34,1.56,.64,1);
+  z-index:500; white-space:nowrap; pointer-events:none;
+  box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  font-weight:500;
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* Hidden inputs */
+#fileInput, #avatarInput, #cameraInput { display:none; }
+#remoteAudio { display:none; }
+
+/* Swipe reply indicator */
+.swipe-indicator { position:absolute; left:-36px; top:50%; transform:translateY(-50%); width:28px; height:28px; border-radius:50%; background:var(--chat-accent); display:flex; align-items:center; justify-content:center; font-size:12px; opacity:0; transition:opacity 0.2s; }
+
+/* ===== IMAGE VIEWER ===== */
+#imgViewer { position:fixed; inset:0; background:rgba(0,0,0,0.98); z-index:400; display:none; flex-direction:column; align-items:center; justify-content:center; }
+#imgViewer.show { display:flex; }
+#imgViewerImg { max-width:100vw; max-height:calc(100vh - 100px); object-fit:contain; touch-action:pinch-zoom; border-radius:4px; }
+.img-viewer-bar { position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; padding:max(16px,env(safe-area-inset-top)) 16px 16px; background:linear-gradient(rgba(0,0,0,0.7),transparent); z-index:1; }
+.img-viewer-close { color:#fff; font-size:28px; cursor:pointer; padding:4px 10px; background:rgba(255,255,255,0.1); border-radius:50%; }
+.img-viewer-dl { background:var(--chat-accent); color:#fff; border:none; border-radius:20px; padding:9px 20px; font-size:13px; font-weight:600; cursor:pointer; font-family:'Poppins',sans-serif; }
+
+/* ===== VIDEO VIEWER ===== */
+#videoViewer { position:fixed; inset:0; background:#000; z-index:400; display:none; flex-direction:column; align-items:center; justify-content:center; }
+#videoViewer.show { display:flex; }
+#videoViewerVid { max-width:100vw; max-height:calc(100vh - 100px); border-radius:4px; background:#000; }
+.vid-viewer-bar { position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:center; padding:max(16px,env(safe-area-inset-top)) 16px 16px; background:linear-gradient(rgba(0,0,0,0.7),transparent); z-index:1; }
+.vid-viewer-close { color:#fff; font-size:28px; cursor:pointer; padding:4px 10px; background:rgba(255,255,255,0.1); border-radius:50%; }
+.vid-viewer-dl { background:var(--chat-accent); color:#fff; border:none; border-radius:20px; padding:9px 20px; font-size:13px; font-weight:600; cursor:pointer; font-family:'Poppins',sans-serif; }
+
+/* Download btn on file messages */
+.dl-btn { background:rgba(255,255,255,0.15); border:none; border-radius:12px; padding:5px 10px; font-size:11px; color:#fff; cursor:pointer; margin-top:4px; display:inline-flex; align-items:center; gap:4px; font-family:'Poppins',sans-serif; }
+.msg-wrap.them .dl-btn { background:rgba(255,107,0,0.15); color:var(--chat-accent); }
+
+/* WhatsApp-style chat date dividers */
+.date-divider { align-self:center; font-size:11px; color:var(--chat-muted); background:var(--chat-surface); border:1px solid var(--chat-border); padding:3px 14px; border-radius:20px; margin:8px 0; }
+
+/* Context menu for messages */
+.msg-context { position:fixed; background:var(--chat-surface); border:1px solid var(--chat-border); border-radius:14px; padding:6px; z-index:350; box-shadow:0 8px 24px rgba(0,0,0,0.4); display:none; min-width:160px; }
+.msg-context.show { display:block; }
+.ctx-item { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:10px; cursor:pointer; font-size:13px; color:var(--chat-text); }
+.ctx-item:active { background:rgba(255,107,0,0.1); }
+.ctx-icon { font-size:16px; }
+
+/* Attach menu */
+.attach-menu { position:fixed; bottom:75px; left:12px; background:var(--chat-surface); border:1px solid var(--chat-border); border-radius:16px; padding:10px; display:none; z-index:200; box-shadow:0 -4px 24px rgba(0,0,0,0.4); }
+.attach-menu.show { display:flex; gap:8px; }
+.attach-opt { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; padding:12px 16px; border-radius:12px; background:var(--chat-bg); border:1px solid var(--chat-border); -webkit-tap-highlight-color:transparent; }
+.attach-opt:active { background:rgba(255,107,0,0.1); }
+.attach-opt-icon { font-size:24px; }
+.attach-opt-label { font-size:10px; color:var(--chat-muted); font-weight:500; }
+
+/* ===== CHAT DELETE SWIPE ===== */
+.chat-preview-wrap { position:relative; border-radius:14px; margin-bottom:4px; }
+.chat-preview-inner { position:relative; background:transparent; }
+.chat-preview-inner .chat-preview { border-radius:14px; margin-bottom:0; }
+
+/* Long press delete popup */
+.lp-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; display:flex; align-items:center; justify-content:center; animation:fadeIn 0.15s ease; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.lp-popup { background:var(--chat-surface); border:1px solid var(--chat-border); border-radius:20px; padding:8px; min-width:220px; overflow:hidden; }
+.lp-name { font-size:13px; color:var(--chat-muted); padding:10px 16px 8px; border-bottom:1px solid var(--chat-border); }
+.lp-btn { display:flex; align-items:center; gap:12px; padding:14px 16px; font-size:15px; cursor:pointer; border-radius:12px; transition:background 0.15s; color:var(--chat-text); font-family:'Poppins',sans-serif; border:none; background:none; width:100%; text-align:left; }
+.lp-btn:active { background:var(--chat-border); }
+.lp-btn.danger { color:#ff4444; }
+
+/* Chat header actions - more icons */
+.chat-hacts { display:flex; gap:8px; align-items:center; }
+.chat-menu-btn { color:var(--chat-muted); font-size:20px; cursor:pointer; padding:4px 6px; }
+
+/* ===== FOLLOW REQUEST SYSTEM ===== */
+.follow-req-btn {
+  background: linear-gradient(135deg, var(--chat-accent), #ff8c00);
+  color:#fff; border:none; border-radius:20px;
+  padding:8px 16px; font-size:12px; font-weight:600;
+  cursor:pointer; font-family:'Poppins',sans-serif;
+  box-shadow:0 3px 12px rgba(255,107,0,0.35);
+  transition:all 0.2s; white-space:nowrap;
+}
+.follow-req-btn:active { transform:scale(0.95); }
+.follow-req-btn.pending {
+  background: rgba(255,107,0,0.15);
+  color:var(--chat-accent); border:1px solid rgba(255,107,0,0.4);
+  box-shadow:none;
+}
+.follow-req-btn.accepted {
+  background: rgba(76,175,80,0.15);
+  color: #4CAF50; border:1px solid rgba(76,175,80,0.4);
+  box-shadow:none;
+}
+.follow-req-btn.blocked {
+  background: rgba(244,67,54,0.1);
+  color: var(--chat-muted); border:1px solid rgba(244,67,54,0.2);
+  box-shadow:none; cursor:default;
+}
+
+/* ===== NOTIFICATIONS SCREEN ===== */
+#notifScreen { background:var(--chat-bg); }
+.notif-header {
+  background:var(--chat-surface);
+  border-bottom:1px solid var(--chat-border);
+  padding:48px 16px 14px;
+  display:flex; justify-content:space-between; align-items:flex-end;
+}
+.notif-title { font-size:18px; font-weight:700; color:var(--chat-accent); }
+.notif-clear-btn {
+  font-size:11px; color:var(--chat-muted);
+  background:none; border:1px solid var(--chat-border);
+  border-radius:12px; padding:5px 12px;
+  cursor:pointer; font-family:'Poppins',sans-serif;
+}
+.notif-body { flex:1; overflow-y:auto; padding:10px 12px; }
+.notif-item {
+  background:var(--chat-surface);
+  border:1px solid var(--chat-border);
+  border-radius:14px; padding:14px;
+  margin-bottom:8px;
+  display:flex; align-items:center; gap:12px;
+}
+.notif-item.unread {
+  border-color: rgba(255,107,0,0.35);
+  background: rgba(255,107,0,0.06);
+}
+.notif-av {
+  width:42px; height:42px; border-radius:50%;
+  background:linear-gradient(135deg,var(--chat-accent),#f5429b);
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; font-weight:700; color:#fff;
+  flex-shrink:0;
+}
+.notif-av.sys { background:linear-gradient(135deg,#444,#222); font-size:20px; }
+.notif-content { flex:1; min-width:0; }
+.notif-text { font-size:13px; color:var(--chat-text); line-height:1.5; }
+.notif-text strong { color:var(--chat-accent); }
+.notif-time { font-size:10px; color:var(--chat-muted); margin-top:3px; }
+.notif-actions { display:flex; gap:8px; margin-top:10px; }
+.notif-accept-btn {
+  flex:1; padding:9px; border-radius:12px; border:none;
+  background: linear-gradient(135deg, #4CAF50, #388E3C);
+  color:#fff; font-size:13px; font-weight:600;
+  cursor:pointer; font-family:'Poppins',sans-serif;
+}
+.notif-reject-btn {
+  flex:1; padding:9px; border-radius:12px; border:none;
+  background: rgba(244,67,54,0.15);
+  color:#f44336; font-size:13px; font-weight:600;
+  border:1px solid rgba(244,67,54,0.3);
+  cursor:pointer; font-family:'Poppins',sans-serif;
+}
+.notif-empty {
+  display:flex; flex-direction:column; align-items:center;
+  justify-content:center; padding:60px 20px; gap:12px;
+  color:var(--chat-muted); text-align:center;
+}
+
+/* Notification badge on bell icon */
+.bn-notif-badge {
+  position:absolute; top:6px; right:calc(50% - 16px);
+  background:var(--chat-accent); border-radius:50%;
+  width:9px; height:9px; display:none;
+  border:1.5px solid rgba(20,20,20,0.97);
+}
+
+/* ===== BLOCK SYSTEM ===== */
+.block-overlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.7); z-index:998;
+  display:flex; align-items:center; justify-content:center;
+  animation:fadeIn 0.15s ease;
+}
+.block-popup {
+  background:var(--chat-surface);
+  border:1px solid var(--chat-border);
+  border-radius:20px; padding:0;
+  min-width:240px; overflow:hidden;
+}
+.block-popup-name {
+  font-size:13px; color:var(--chat-muted);
+  padding:12px 16px 10px;
+  border-bottom:1px solid var(--chat-border);
+}
+.block-popup-btn {
+  display:flex; align-items:center; gap:12px;
+  padding:15px 16px; font-size:15px; cursor:pointer;
+  color:var(--chat-text); border:none;
+  background:none; width:100%; text-align:left;
+  font-family:'Poppins',sans-serif;
+  border-radius:0; transition:background 0.15s;
+}
+.block-popup-btn:active { background:var(--chat-border); }
+.block-popup-btn.danger { color:#ff4444; }
+.block-popup-btn.warn { color:#ffaa00; }
+
+/* ===== USER ROW UPDATES ===== */
+.u-row-actions { display:flex; gap:6px; align-items:center; flex-shrink:0; }
+.u-more-btn {
+  width:32px; height:32px; border-radius:50%;
+  background:var(--chat-surface); border:1px solid var(--chat-border);
+  color:var(--chat-muted); font-size:16px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; flex-shrink:0;
+}
+</style>
+</head>
+<body>
+
+<!-- ONBOARDING -->
+<div class="screen active" id="onboard">
+  <div class="ob-slide" id="obSlide">
+    <div class="ob-icon" id="obIcon">🕉️</div>
+    <div class="ob-title" id="obTitle">Daily Chant mein swagat hai!</div>
+    <div class="ob-desc" id="obDesc">Ye app hai mantra chanting ke liye — roze apna jaap karo aur count rakho!</div>
+    <div class="ob-demo" id="obDemo" style="display:none"></div>
+    <div class="ob-dots">
+      <div class="ob-dot active" id="od0"></div>
+      <div class="ob-dot" id="od1"></div>
+      <div class="ob-dot" id="od2"></div>
+    </div>
+    <button class="ob-btn" id="obNextBtn">Aage →</button>
+    <div class="ob-skip" id="obSkipBtn">Skip karo</div>
+  </div>
+</div>
+
+<!-- GOOGLE LOGIN -->
+<div class="screen" id="googleLogin">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:40px 28px;background:linear-gradient(160deg,#fff8ed 0%,#f7f0e2 55%,#f0e6d0 100%);position:relative;overflow:hidden;">
+    <div style="position:absolute;top:-60px;left:50%;transform:translateX(-50%);font-size:320px;opacity:0.04;font-family:serif;pointer-events:none;line-height:1;">ॐ</div>
+    <div style="position:absolute;top:0;left:0;right:0;height:40%;background:radial-gradient(ellipse at 50% -10%,rgba(200,65,10,0.07) 0%,transparent 70%);pointer-events:none;"></div>
+
+    <div style="font-size:72px;margin-bottom:20px;filter:drop-shadow(0 8px 20px rgba(200,65,10,0.2));animation:float 3s ease-in-out infinite;">📿</div>
+    <div style="font-size:12px;font-weight:700;letter-spacing:4px;text-transform:uppercase;background:linear-gradient(90deg,var(--saffron),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;">Daily Chant</div>
+    <div style="font-size:22px;font-weight:700;color:var(--brown2);margin-bottom:8px;text-align:center;line-height:1.2;">Swagat hai! 🙏</div>
+    <div style="font-size:13px;color:var(--brown);text-align:center;margin-bottom:40px;line-height:1.7;max-width:260px;opacity:0.85;">Google account se login karo<br>Ek tap mein — safe aur easy</div>
+
+    <div style="width:100%;max-width:320px;">
+      <button id="googleLoginBtn" onclick="signInWithGoogle()"
+        style="width:100%;padding:17px;border-radius:22px;border:2px solid rgba(200,150,10,0.3);background:linear-gradient(145deg,#ffffff,#fdf9f2);color:var(--brown2);font-size:16px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;box-shadow:0 6px 24px rgba(0,0,0,0.08);letter-spacing:0.3px;display:flex;align-items:center;justify-content:center;gap:12px;transition:all 0.2s;">
+        <svg width="22" height="22" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
+        Google se Login Karo
+      </button>
+    </div>
+
+    <div id="googleLoginStatus" style="margin-top:18px;font-size:13px;color:var(--saffron);text-align:center;min-height:20px;font-weight:500;"></div>
+  </div>
+</div>
+
+<!-- CREATE PASSWORD -->
+<div class="screen" id="createPass">
+  <div class="cp-top">
+    <div class="cp-step" id="cpStep">PASSWORD BANAO</div>
+    <div class="cp-title" id="cpTitle">Apna Password Set Karo</div>
+    <div class="cp-sub" id="cpSub">4 digit ka password — sirf tum jaano!</div>
+  </div>
+  <div class="cp-dots">
+    <div class="cp-dot" id="c0"></div>
+    <div class="cp-dot" id="c1"></div>
+    <div class="cp-dot" id="c2"></div>
+    <div class="cp-dot" id="c3"></div>
+  </div>
+  <div class="keypad">
+    <button class="key" onclick="cpKey('1')">1</button>
+    <button class="key" onclick="cpKey('2')">2</button>
+    <button class="key" onclick="cpKey('3')">3</button>
+    <button class="key" onclick="cpKey('4')">4</button>
+    <button class="key" onclick="cpKey('5')">5</button>
+    <button class="key" onclick="cpKey('6')">6</button>
+    <button class="key" onclick="cpKey('7')">7</button>
+    <button class="key" onclick="cpKey('8')">8</button>
+    <button class="key" onclick="cpKey('9')">9</button>
+    <button class="key emp"></button>
+    <button class="key" onclick="cpKey('0')">0</button>
+    <button class="key del" onclick="cpDel()">⌫</button>
+  </div>
+</div>
+
+<!-- PROFILE SETUP -->
+<div class="screen" id="profileSetup">
+  <div class="ps-header">
+    <div class="ps-title">Profile Setup karo</div>
+    <div class="ps-sub">Ek baar set karo — baad mein bhi change kar sakte ho</div>
+  </div>
+  <div class="ps-body">
+    <div class="ps-avatar-wrap">
+      <div class="ps-avatar" id="psAvatar" onclick="document.getElementById('avatarInput').click()">
+        👤
+      </div>
+      <div class="ps-avatar-hint">Tap karke photo lagao (optional)</div>
+    </div>
+    <div>
+      <div class="ps-label">Tera Naam</div>
+      <input class="ps-input" id="psName" placeholder="Apna naam likho..." autocomplete="off">
+    </div>
+
+    <button class="ps-save-btn" onclick="saveProfile()">Save & Shuru Karo 🙏</button>
+  </div>
+</div>
+
+<!-- COUNTER SCREEN -->
+<div class="screen" id="counter">
+  <div class="counter-body">
+    <div class="counter-header">
+      <div class="app-title">Daily Chant</div>
+      <div class="user-name-display" id="userNameDisplay"></div>
+    </div>
+
+    <div class="circle-wrap">
+      <svg class="circle-svg" viewBox="0 0 190 190">
+        <defs>
+          <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#d4a017"/>
+            <stop offset="100%" style="stop-color:#c8410a"/>
+          </linearGradient>
+        </defs>
+        <circle class="circle-bg" cx="95" cy="95" r="85"/>
+        <circle class="circle-fill" id="circFill" cx="95" cy="95" r="85"/>
+      </svg>
+      <div class="circle-count">
+        <div class="count-num" id="countNum">0</div>
+        <div class="count-of" id="countOf">of 108</div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;">
+      <div style="background:linear-gradient(145deg,#ffffff,#fdf9f2);border:1.5px solid rgba(200,150,10,0.3);border-radius:18px;padding:11px 18px;font-size:13px;color:var(--brown2);text-align:center;width:90%;box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+        Total Mantras: <strong id="totalMantras" style="color:var(--saffron);">0</strong>
+      </div>
+      <div class="mantra-pill" id="mantraPill" onclick="openMantraModal()">
+        📿 Select Mantra
+      </div>
+      <button class="sound-btn" id="soundBtn" onclick="toggleSound()">Sound ON</button>
+    </div>
+
+    <button class="tap-btn" id="tapBtn">
+      <div class="tap-om">ॐ</div>
+      <div class="tap-text">TAP</div>
+    </button>
+
+    <button class="restart-btn" onclick="restartMala()">↺ Restart Mala</button>
+  </div>
+</div>
+
+<!-- CHATS LIST -->
+<div class="screen" id="chatsListScreen">
+  <div class="chats-header">
+    <div class="chats-title">Chats</div>
+    <button class="new-chat-btn" onclick="showScreen('peopleScreen')">+ New Chat</button>
+  </div>
+  <div class="chat-list-body" id="chatListBody">
+    <div class="empty-chats">
+      <div style="font-size:40px;">💬</div>
+      <div>Abhi koi chat nahi hai</div>
+      <div style="font-size:12px;">People section mein jaake follow karo</div>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT SCREEN -->
+<div class="screen" id="chatScreen">
+  <div class="chat-header">
+    <div class="chat-back" onclick="closeChatScreen()">‹</div>
+    <div class="chat-av" id="chatAvatar" onclick="openChatInfo()">?</div>
+    <div class="chat-hinfo" onclick="openChatInfo()" style="cursor:pointer">
+      <div class="chat-hname" id="chatPartnerName">Partner</div>
+      <div class="chat-hst" id="chatStatus">...</div>
+    </div>
+    <div class="chat-hacts">
+      <div class="chat-icon-btn" onclick="refreshChat()" title="Refresh">🔄</div>
+    </div>
+  </div>
+  <div class="msgs-area" id="msgsArea">
+    <div class="sys-msg">🔒 Private • Encrypted • No Storage</div>
+  </div>
+  <div style="position:relative;">
+    <div id="replyBar" style="display:none;width:100%;padding:8px 12px;background:rgba(255,107,0,0.1);border-left:3px solid var(--chat-accent);" class="reply-bar">
+      <div id="replyBarText" style="font-size:12px;color:var(--chat-muted);flex:1;"></div>
+      <div class="reply-close" onclick="cancelReply()">✕</div>
+    </div>
+    <div class="chat-input-bar">
+      <div class="attach-btn" onclick="toggleAttachMenu()">📎</div>
+      <textarea class="msg-inp" id="msgInp" placeholder="Message..." rows="1"
+        onkeydown="msgKey(event)" oninput="msgResize(this)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMsg()">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- PEOPLE SCREEN -->
+<div class="screen" id="peopleScreen">
+  <div class="people-header">
+    <div class="people-title">People</div>
+    <div style="font-size:11px;color:var(--chat-muted);margin:4px 0 6px;">Apna ID Settings mein dekho → Dost ko bhejo → Woh yahan search karke follow karega</div>
+    <input class="search-bar" id="searchBar" placeholder="🔍 Dost ka 6-letter ID daalo (e.g. AB12XY)..." 
+      oninput="searchUser(this.value)" autocomplete="off" autocorrect="off" spellcheck="false"
+      style="text-transform:uppercase" maxlength="6">
+  </div>
+  <div class="people-body" id="peopleBody">
+    <div id="searchResults"></div>
+    <div class="section-label">Following</div>
+    <div id="followingList"></div>
+
+  </div>
+</div>
+
+<!-- SETTINGS SCREEN -->
+<div class="screen" id="settingsScreen">
+  <div class="settings-header">
+    <div class="settings-title">Settings</div>
+  </div>
+  <div class="settings-body">
+    <!-- ID Card - TOP -->
+    <div style="background:linear-gradient(135deg,#1c1000,#2d1800,#1c1000);border:1.5px solid rgba(255,107,0,0.5);border-radius:20px;padding:20px;margin-bottom:14px;text-align:center;box-shadow:0 6px 24px rgba(255,107,0,0.15);position:relative;overflow:hidden;" onclick="copyMyId()">
+      <div style="position:absolute;right:-10px;bottom:-15px;font-size:80px;opacity:0.06;font-family:serif;pointer-events:none;">ॐ</div>
+      <div style="font-size:10px;color:rgba(255,107,0,0.7);letter-spacing:3px;margin-bottom:8px;font-weight:600;">MERA ID — SHARE KARO</div>
+      <div id="myIdDisplay" style="font-size:36px;font-weight:700;color:var(--chat-accent);letter-spacing:8px;text-shadow:0 0 20px rgba(255,107,0,0.3);">-</div>
+      <div style="font-size:10px;color:rgba(255,107,0,0.5);margin-top:8px;display:flex;align-items:center;justify-content:center;gap:4px;">📋 Tap karo copy ho jaega</div>
+    </div>
+
+    <!-- Profile card -->
+    <div class="settings-profile" onclick="editProfile()">
+      <div class="settings-av" id="settingsAv">👤</div>
+      <div>
+        <div class="settings-name" id="settingsName">-</div>
+        <div class="settings-id" id="settingsId">ID: -</div>
+      </div>
+      <div style="margin-left:auto;color:var(--chat-muted);font-size:18px;">›</div>
+    </div>
+
+    <!-- Search User by ID -->
+    <div class="settings-section">
+      <div class="settings-section-title">🔍 ID se User Dhundo</div>
+      <div style="background:var(--chat-surface);border:1px solid var(--chat-border);border-radius:16px;padding:16px;">
+        <input id="settingsSearchBar" 
+          style="width:100%;background:var(--chat-bg);border:1px solid var(--chat-border);border-radius:12px;padding:12px 16px;color:var(--chat-text);font-family:'Poppins',sans-serif;font-size:14px;outline:none;text-transform:uppercase;letter-spacing:3px;transition:border-color 0.2s;"
+          placeholder="6-letter ID daalo (e.g. AB12XY)"
+          maxlength="6" autocomplete="off" autocorrect="off" spellcheck="false"
+          oninput="searchUserFromSettings(this.value)"
+          onfocus="this.style.borderColor='var(--chat-accent)'" onblur="this.style.borderColor='var(--chat-border)'">
+        <div id="settingsSearchResults" style="margin-top:10px;"></div>
+      </div>
+    </div>
+
+    <!-- Account -->
+    <div class="settings-section">
+      <div class="settings-section-title">Account</div>
+      <div class="settings-row" onclick="changePassword()">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">🔐</div>
+          <div><div class="settings-row-text">Password Change</div></div>
+        </div>
+        <div class="settings-arrow">›</div>
+      </div>
+      <div class="settings-row" onclick="logoutUser()" style="margin-top:8px;">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">🚪</div>
+          <div><div class="settings-row-text" style="color:#f44336;">Logout</div><div class="settings-row-sub">Google account se logout ho jao</div></div>
+        </div>
+        <div style="color:#f44336;font-size:12px;">›</div>
+      </div>
+    </div>
+
+
+
+    <!-- Privacy -->
+    <div class="settings-section">
+      <div class="settings-section-title">Privacy</div>
+      <div class="settings-row" onclick="clearAllChats()">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">🗑️</div>
+          <div><div class="settings-row-text">Saari Chats Clear</div></div>
+        </div>
+        <div style="color:var(--danger);font-size:12px;">Clear</div>
+      </div>
+    </div>
+
+    <!-- Mantra count settings -->
+    <div class="settings-section">
+      <div class="settings-section-title">Mala Settings</div>
+      <div class="settings-row" onclick="changeMalaTarget()">
+        <div class="settings-row-left">
+          <div class="settings-row-icon">📿</div>
+          <div><div class="settings-row-text">Mala Target</div><div class="settings-row-sub" id="malaTargetDisplay">108 per mala</div></div>
+        </div>
+        <div class="settings-arrow">›</div>
+      </div>
+    </div>
+
+    <!-- Icon Picker -->
+    <div class="settings-section">
+      <div class="settings-section-title">Profile Icon</div>
+      <div style="background:var(--chat-surface);border:1px solid var(--chat-border);border-radius:16px;padding:14px;">
+        <div class="icon-picker">
+          <div class="icon-pick-item" onclick="setMyIcon('om')">
+            <div class="icon-pick-circle" id="ip-om">🕉️</div>
+          </div>
+          <div class="icon-pick-item" onclick="setMyIcon('mala')">
+            <div class="icon-pick-circle" id="ip-mala">📿</div>
+          </div>
+          <div class="icon-pick-item" onclick="setMyIcon('pranam')">
+            <div class="icon-pick-circle" id="ip-pranam">🙏</div>
+          </div>
+          <div class="icon-pick-item" onclick="setMyIcon('lotus')">
+            <div class="icon-pick-circle" id="ip-lotus">🌸</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- App Features -->
+    <div class="settings-section">
+      <div class="settings-section-title">App Features Guide</div>
+      <div style="background:var(--chat-surface);border:1px solid var(--chat-border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:0;">
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--chat-border);">
+          <div style="width:38px;height:38px;border-radius:12px;background:rgba(255,107,0,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🕉️</div>
+          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Mantra Counter</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">OM button tap karo — mantra count hoga. Mala complete pe celebration!</div></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--chat-border);">
+          <div style="width:38px;height:38px;border-radius:12px;background:rgba(255,107,0,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📿</div>
+          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Custom Mantra</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">Mantra pill pe tap karo — 10 mantras pehle se hain, apna bhi add kar sakte ho.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--chat-border);">
+          <div style="width:38px;height:38px;border-radius:12px;background:rgba(255,107,0,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💬</div>
+          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Secret Chat</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">Counter screen pe top-right corner 3 baar tap karo ya OM button hold karo — password daalo, chat section khulega.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--chat-border);">
+          <div style="width:38px;height:38px;border-radius:12px;background:rgba(255,107,0,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📎</div>
+          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Photo & File Share</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">Chat mein 📎 se photo, video, ya file bhej sakte ho. Max 5MB image, 25MB video.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--chat-border);">
+          <div style="width:38px;height:38px;border-radius:12px;background:rgba(255,107,0,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">↩</div>
+          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Reply & Long Press</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">Message swipe karo reply ke liye. Hold karo copy/reply ke liye.</div></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;">
+          <div style="width:38px;height:38px;border-radius:12px;background:rgba(255,107,0,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔐</div>
+          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Password Lock</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">4-digit password — chat section sirf tumhara. Koi dekh nahi sakta.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- About -->
+    <div class="settings-section">
+      <div class="settings-section-title">About</div>
+      <div style="background:linear-gradient(135deg,#100800,#1e1000,#100800);border:1.5px solid rgba(255,107,0,0.35);border-radius:20px;padding:24px;text-align:center;position:relative;overflow:hidden;box-shadow:0 6px 24px rgba(255,107,0,0.1);">
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:160px;opacity:0.04;font-family:serif;pointer-events:none;line-height:1;">ॐ</div>
+        <div style="font-size:44px;margin-bottom:10px;filter:drop-shadow(0 4px 12px rgba(255,107,0,0.3));">🕉️</div>
+        <div style="font-size:20px;font-weight:700;background:linear-gradient(90deg,var(--chat-accent),#ffa040);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px;">DAILY CHANT</div>
+        <div style="font-size:10px;color:var(--chat-muted);margin-top:4px;margin-bottom:20px;letter-spacing:1px;">Version 1.0</div>
+        <div style="width:50px;height:1px;background:rgba(255,107,0,0.2);margin:0 auto 20px;"></div>
+        <div style="font-size:10px;color:var(--chat-muted);letter-spacing:2px;margin-bottom:8px;text-transform:uppercase;">Created by</div>
+        <div style="font-size:18px;font-weight:700;color:var(--chat-text);">Anubhav Rajawat</div>
+        <div style="font-size:13px;color:var(--chat-accent);font-weight:600;margin-top:3px;letter-spacing:0.5px;">@ Eren</div>
+        <div style="margin-top:20px;font-size:11px;color:rgba(255,107,0,0.45);line-height:2;letter-spacing:0.3px;">
+          Made with ❤️ for daily spiritual practice.<br>
+          Har din ek mala — roze ka niyam.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MANTRA MODAL -->
+<div class="modal-overlay" id="mantraModal">
+  <div class="modal-sheet">
+    <div class="modal-title">🕉️ Mantra Choose karo</div>
+    <div id="mantraListEl"></div>
+    <div class="mantra-add-row">
+      <input class="mantra-add-inp" id="mantraAddInp" placeholder="Apna mantra add karo..." autocomplete="off">
+      <button class="mantra-add-btn" onclick="addMantra()">Add</button>
+    </div>
+    <button class="modal-close" onclick="closeMantraModal()">Close</button>
+  </div>
+</div>
+
+<!-- CALL OVERLAY REMOVED -->
+
+<!-- IMAGE VIEWER -->
+<div id="imgViewer">
+  <div class="img-viewer-bar">
+    <div class="img-viewer-close" onclick="closeImgViewer()">✕</div>
+    <button class="img-viewer-dl" onclick="downloadViewerImg()">⬇ Download</button>
+  </div>
+  <img id="imgViewerImg" src="" alt="">
+</div>
+
+<!-- VIDEO VIEWER -->
+<div id="videoViewer">
+  <div class="vid-viewer-bar">
+    <div class="vid-viewer-close" onclick="closeVideoViewer()">✕</div>
+    <button class="vid-viewer-dl" onclick="downloadViewerVid()">⬇ Download</button>
+  </div>
+  <video id="videoViewerVid" controls autoplay playsinline></video>
+</div>
+
+
+
+<!-- Message Context Menu -->
+<div class="msg-context" id="msgContext">
+  <div class="ctx-item" onclick="ctxReply()"><span class="ctx-icon">↩</span> Reply</div>
+  <div class="ctx-item" onclick="ctxCopy()"><span class="ctx-icon">📋</span> Copy</div>
+  <div class="ctx-item" onclick="ctxDownload()" id="ctxDlItem" style="display:none"><span class="ctx-icon">⬇</span> Save</div>
+  <div class="ctx-item" onclick="document.getElementById('msgContext').classList.remove('show')"><span class="ctx-icon">✕</span> Close</div>
+</div>
+
+<!-- Attach Menu — Photo only -->
+<div class="attach-menu" id="attachMenu">
+  <div class="attach-opt" onclick="pickFile('image/*')">
+    <div class="attach-opt-icon">🖼</div>
+    <div class="attach-opt-label">Photo</div>
+  </div>
+  <div class="attach-opt" onclick="openCamera()">
+    <div class="attach-opt-icon">📷</div>
+    <div class="attach-opt-label">Camera</div>
+  </div>
+</div>
+
+<!-- Floating Mantra -->
+<div class="mantra-float" id="mantraFloat">ॐ</div>
+
+<!-- Hidden inputs -->
+<input type="file" id="fileInput" onchange="sendFile(this)" accept="image/*">
+<input type="file" id="cameraInput" onchange="sendFile(this)" accept="image/*" capture="environment">
+<input type="file" id="avatarInput" accept="image/*" onchange="setAvatar(this)">
+<div class="toast" id="toast"></div>
+
+<!-- NOTIFICATIONS SCREEN -->
+<div class="screen" id="notifScreen">
+  <div class="notif-header">
+    <div class="notif-title">🔔 Notifications</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="notif-clear-btn" id="notifRefreshBtn" onclick="refreshNotifications()" title="Refresh">🔄</button>
+      <button class="notif-clear-btn" onclick="clearAllNotifs()">Sab clear</button>
+    </div>
+  </div>
+  <div class="notif-body" id="notifBody">
+    <div class="notif-empty">
+      <div style="font-size:40px;">🔔</div>
+      <div>Abhi koi notification nahi</div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav" id="bottomNav" style="display:none;">
+  <div class="bn-item" id="bn-lock" onclick="lockAndGoCounter()" title="Lock & Exit">
+    <div class="bn-icon">🔒</div>
+    <span>Lock</span>
+  </div>
+  <div class="bn-item" id="bn-chat" onclick="navTo('chatsListScreen')">
+    <div class="bn-icon">💬</div>
+    <span>Chat</span>
+    <div class="bn-badge" id="bnBadge">0</div>
+  </div>
+  <div class="bn-item" id="bn-notif" onclick="navTo('notifScreen')">
+    <div class="bn-icon">🔔</div>
+    <span>Notifs</span>
+    <div class="bn-notif-badge" id="bnNotifBadge"></div>
+  </div>
+  <div class="bn-item" id="bn-people" onclick="navTo('peopleScreen')">
+    <div class="bn-icon">👥</div>
+    <span>People</span>
+  </div>
+  <div class="bn-item" id="bn-settings" onclick="navTo('settingsScreen')">
+    <div class="bn-icon">⚙️</div>
+    <span>Settings</span>
+  </div>
+</nav>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+
+import { getDatabase, ref, set, push, onValue, remove, onDisconnect, get, update, serverTimestamp, query as fbQuery, limitToLast, orderByKey }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+// Expose query helpers for paginated loading
+window._fbQueryFns = { query: fbQuery, limitToLast, orderByKey };
+
+// ===== EARLY SCREEN SWITCH — Firebase se pehle =====
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.classList.add('active');
+  const NAV_SCREENS=['chatsListScreen','peopleScreen','settingsScreen','notifScreen'];
+  const NAV_IDS={'chatsListScreen':'bn-chat','peopleScreen':'bn-people','settingsScreen':'bn-settings','notifScreen':'bn-notif'};
+  const showNav=NAV_SCREENS.includes(id);
+  const nav=document.getElementById('bottomNav');
+  if(nav) nav.style.display=showNav?'flex':'none';
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('has-nav'));
+  if(showNav) el.classList.add('has-nav');
+  document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('active'));
+  if(NAV_IDS[id]) document.getElementById(NAV_IDS[id]).classList.add('active');
+  if(id==='peopleScreen'){ if(typeof renderPeople==='function') renderPeople(); }
+  if(id==='settingsScreen'){ if(typeof updateSettingsUI==='function') updateSettingsUI(); }
+  if(id==='chatsListScreen'){ if(typeof renderChatList==='function') renderChatList(); }
+  if(id==='notifScreen'){ if(typeof renderNotifications==='function') renderNotifications(); }
+}
+window.showScreen=showScreen;
+
+// Auth guard — sirf ek baar chalega
+let _authHandled = false;
+
+// ===== ONBOARDING — Firebase ki zarurat nahi =====
+let obStep=0;
+const obSlides=[
+  {icon:'🕉️',title:'Daily Chant mein swagat hai!',desc:'Ye app hai mantra chanting ke liye — roze apna jaap karo aur count rakho!',demo:null},
+  {icon:'📿',title:'Mantra Choose karo',desc:'10 mantras pehle se hain — ya apna mantra add karo. OM button tap karo aur count shuru!',demo:'Mantra pill pe tap karo → choose karo'},
+  {icon:'🔐',title:'Password se Suraksha',desc:'Apna 4-digit password banao — sirf tum jaano. App safe hai!',demo:null},
+];
+window.obNext=function(){
+  obStep++;
+  if(obStep>=obSlides.length){window.skipOnboard();return;}
+  const s=obSlides[obStep];
+  document.getElementById('obIcon').textContent=s.icon;
+  document.getElementById('obTitle').textContent=s.title;
+  document.getElementById('obDesc').textContent=s.desc;
+  const demoEl=document.getElementById('obDemo');
+  if(s.demo){demoEl.style.display='block';demoEl.textContent=s.demo;}
+  else{demoEl.style.display='none';}
+  document.getElementById('obNextBtn').textContent=obStep===obSlides.length-1?'Shuru Karo →':'Aage →';
+  for(let i=0;i<3;i++){document.getElementById('od'+i).classList.toggle('active',i===obStep);}
+};
+window.skipOnband=window.skipOnboard=function(){
+  localStorage.setItem('dc_onboard_done','1');
+  if(auth.currentUser) {
+    // Already logged in — direct handle
+    _authHandled = false;
+    handleAuthUser(auth.currentUser);
+  } else {
+    showScreen('googleLogin');
+  }
+};
+
+// Buttons attach - fix for mobile tap issues
+function addTapListener(el, fn) {
+  if(!el) return;
+  let touched = false;
+  el.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    touched = true;
+    fn();
+    setTimeout(()=>{ touched=false; }, 300);
+  }, { passive: false });
+  el.addEventListener('click', function(e) {
+    if(touched) return;
+    fn();
+  });
+}
+
+addTapListener(document.getElementById('obNextBtn'), window.obNext);
+addTapListener(document.getElementById('obSkipBtn'), window.skipOnboard);
+
+// ===== FIREBASE =====
+const app = initializeApp({
+  apiKey: "AIzaSyANk8yTeZKXb1d6R4mQsUi3K42b8A1AF_A",
+  authDomain: "daily-chant.firebaseapp.com",
+  databaseURL: "https://daily-chant-default-rtdb.firebaseio.com",
+  projectId: "daily-chant",
+  storageBucket: "daily-chant.firebasestorage.app",
+  messagingSenderId: "867716050882",
+  appId: "1:867716050882:web:fd2373d24d67fb4d7ff05b"
+});
+const db = getDatabase(app);
+const auth = getAuth(app);
+
+
+// ===== GOOGLE AUTH =====
+const googleProvider = new GoogleAuthProvider();
+
+window.signInWithGoogle = async function() {
+  const btn = document.getElementById('googleLoginBtn');
+  if(btn){ btn.disabled=true; btn.textContent='Login ho raha hai...'; }
+  try {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if(isMobile) {
+      // Redirect — page reload hoga, onAuthStateChanged handle karega
+      await signInWithRedirect(auth, googleProvider);
+    } else {
+      // Popup — onAuthStateChanged automatically fire karega
+      await signInWithPopup(auth, googleProvider);
+    }
+  } catch(e) {
+    if(btn){ btn.disabled=false; btn.innerHTML='<svg width="22" height="22" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg> Google se Login Karo'; }
+    const el = document.getElementById('googleLoginStatus');
+    if(el) el.textContent = 'Login nahi hua: ' + (e.message||'dobara try karo');
+  }
+};
+
+// ===== LOGOUT =====
+window.logoutUser = async function() {
+  if(!confirm('Logout karna chahte ho?')) return;
+  try {
+    if(myId) {
+      await set(ref(db,`users/${myId}/online`), false).catch(()=>{});
+    }
+    // Same UID ke liye pass+setup save karo — taaki wapas login pe skip ho
+    const _uid = myId;
+    const _pass = localStorage.getItem('dc_pass');
+    const _setup = localStorage.getItem('dc_setup_done');
+    const _name = localStorage.getItem('dc_name');
+    const _avatar = localStorage.getItem('dc_avatar');
+    if(_uid && _pass) localStorage.setItem('dc_pass_'+_uid, _pass);
+    if(_uid && _setup) localStorage.setItem('dc_setup_done_'+_uid, '1');
+    if(_uid && _name) localStorage.setItem('dc_name_'+_uid, _name);
+    if(_uid && _avatar) localStorage.setItem('dc_avatar_'+_uid, _avatar);
+
+    await signOut(auth);
+    localStorage.removeItem('dc_my_id');
+    localStorage.removeItem('dc_phone_uid');
+    localStorage.removeItem('dc_setup_done');
+    localStorage.removeItem('dc_pass');
+    localStorage.removeItem('dc_following');
+    localStorage.removeItem('dc_chats');
+    localStorage.removeItem('dc_notifs');
+    localStorage.removeItem('dc_blocked');
+    localStorage.removeItem('dc_reqstatus');
+    localStorage.removeItem('dc_name');
+    localStorage.removeItem('dc_avatar');
+    myId=null; myName=''; myAvatar=null; following={};
+    _authHandled = false;
+    _initMainDone = false;
+    _initFirebaseDone = false;
+    _secretAccessSetup = false;
+    // onAuthStateChanged will fire with null user — show googleLogin
+    // but we show it immediately too for fast UX
+    showScreen('googleLogin');
+    toast('Logout ho gaya ✓');
+  } catch(e) {
+    toast('Logout nahi hua, dobara try karo');
+  }
+};
+
+// ===== STATE =====
+let myId = null, myName = '', myIcon = 'om', myAvatar = null;
+let userPassword = null;
+let count = 0, malaTarget = 108, totalMantras = 0, soundOn = true;
+let selectedMantra = null;
+let customMantras = [];
+let following = {};
+let currentChatId = null, currentChatName = '';
+let replyTo = null;
+let mantraFloatTimer = null;
+
+// ===== MANTRAS =====
+const DEFAULT_MANTRAS = [
+  "ॐ नमो भगवते वासुदेवाय",
+  "कृष्णाय वासुदेवाय हरये परमात्मने । प्रणत क्लेशनाशाय गोविंदाय नमो नमः॥",
+  "हरे कृष्ण हरे कृष्ण कृष्ण कृष्ण हरे हरे । हरे राम हरे राम राम राम हरे हरे॥",
+  "यदा यदा हि धर्मस्य ग्लानिर्भवति भारत । अभ्युत्थानमधर्मस्य तदात्मानं सृजाम्यहम्॥ परित्राणाय साधूनां विनाशाय च दुष्कृताम् । धर्मसंस्थापनार्थाय सम्भवामि युगे युगे॥",
+  "ॐ भूर्भुवः स्वः । तत्सवितुर्वरेण्यं । भर्गो देवस्य धीमहि । धियो यो नः प्रचोदयात्॥",
+  "राम राम",
+  "राधे राधे",
+  "ॐ श्री कृष्णाय नमः",
+  "ॐ नमः शिवाय",
+  "गोविंदाय नमो नमः"
+];
+
+// ===== ICONS =====
+const ICONS = { om:'🕉️', mala:'📿', pranam:'🙏', lotus:'🌸' };
+
+// ===== PASSWORD HASHING (SHA-256) =====
+async function hashPin(pin) {
+  const enc = new TextEncoder().encode(pin + 'dc_salt_v1');
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// Migrate old plain-text password on first load
+async function migratePasswordIfNeeded() {
+  const stored = localStorage.getItem('dc_pass');
+  if(stored && stored.length === 4 && /^\d{4}$/.test(stored)) {
+    // Old plain-text PIN — hash karo
+    const hashed = await hashPin(stored);
+    localStorage.setItem('dc_pass', hashed);
+    userPassword = hashed;
+  } else if(stored) {
+    userPassword = stored;
+  }
+}
+
+// ===== CREATE PASSWORD =====
+let cpPin = '', cpMode = 'create', cpFirst = '';
+
+window.cpKey = function(k) {
+  if(cpPin.length>=4) return;
+  cpPin+=k; updateCpDots();
+  if(cpPin.length===4) setTimeout(checkCpPin,150);
+};
+window.cpDel = function() { cpPin=cpPin.slice(0,-1); updateCpDots(); };
+
+function updateCpDots(err=false) {
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('c'+i);
+    d.classList.toggle('filled',i<cpPin.length);
+    d.classList.toggle('error',err);
+  }
+}
+
+async function checkCpPin() {
+  if(cpMode==='create') {
+    cpFirst=cpPin; cpPin='';
+    document.getElementById('cpStep').textContent='CONFIRM KARO';
+    document.getElementById('cpTitle').textContent='Dobara Enter Karo';
+    document.getElementById('cpSub').textContent='Password confirm karo';
+    updateCpDots();
+    cpMode='confirm';
+  } else if(cpMode==='confirm') {
+    if(cpPin===cpFirst) {
+      const hashed = await hashPin(cpPin);
+      userPassword=hashed;
+      localStorage.setItem('dc_pass', hashed);
+      toast('Password set ho gaya! ✓');
+      cpPin=''; updateCpDots();
+      showScreen('profileSetup');
+    } else {
+      updateCpDots(true);
+      setTimeout(()=>{ cpPin=''; updateCpDots(); document.getElementById('cpStep').textContent='DOBARA BANAO'; document.getElementById('cpTitle').textContent='Match nahi hua! Try karo'; cpFirst=''; cpMode='create'; },800);
+    }
+  } else if(cpMode==='verify') {
+    const hashed = await hashPin(cpPin);
+    if(hashed===userPassword) {
+      cpPin=''; updateCpDots();
+      if(_afterVerifyGoChat) {
+        _afterVerifyGoChat=false;
+        showScreen('chatsListScreen'); renderChatList();
+      } else {
+        showScreen('counter'); initMain();
+      }
+    } else {
+      updateCpDots(true);
+      setTimeout(()=>{ cpPin=''; updateCpDots(); },700);
+    }
+  } else if(cpMode==='change') {
+    const hashed = await hashPin(cpPin);
+    if(hashed===userPassword) {
+      cpFirst=''; cpPin=''; cpMode='change2';
+      document.getElementById('cpTitle').textContent='Naya Password Set Karo';
+      document.getElementById('cpSub').textContent='4 digit naya password';
+      updateCpDots();
+    } else {
+      updateCpDots(true);
+      setTimeout(()=>{ cpPin=''; updateCpDots(); },700);
+    }
+  } else if(cpMode==='change2') {
+    cpFirst=cpPin; cpPin=''; cpMode='change3';
+    document.getElementById('cpTitle').textContent='Confirm Naya Password';
+    updateCpDots();
+  } else if(cpMode==='change3') {
+    if(cpPin===cpFirst) {
+      const hashed = await hashPin(cpPin);
+      userPassword=hashed; localStorage.setItem('dc_pass', hashed);
+      toast('Password change ho gaya! ✓');
+      cpPin=''; cpMode='verify';
+      showScreen('counter');
+    } else {
+      updateCpDots(true);
+      setTimeout(()=>{ cpPin=''; cpMode='change2'; updateCpDots(); },700);
+    }
+  }
+}
+
+// ===== PROFILE SETUP =====
+
+
+window.setAvatar = function(inp) {
+  const file=inp.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    myAvatar=e.target.result;
+    const av=document.getElementById('psAvatar');
+    av.innerHTML=`<img src="${myAvatar}">`;
+    localStorage.setItem('dc_avatar',myAvatar);
+  };
+  reader.readAsDataURL(file);
+};
+
+window.saveProfile = function() {
+  const name=document.getElementById('psName').value.trim();
+  if(!name){ toast('Naam daalo!'); return; }
+  myName=name;
+  localStorage.setItem('dc_name',myName);
+  localStorage.setItem('dc_setup_done','1');
+  if(myId) {
+    set(ref(db,`users/${myId}`),{ name:myName, online:true, ts:Date.now(), icon:myIcon }).catch(()=>{});
+  }
+  showScreen('counter');
+  initMain();
+};
+
+// ===== MAIN INIT =====
+let _initMainDone = false;
+function initMain() {
+  if(_initMainDone) return;
+  _initMainDone = true;
+  // Load saved data
+  count=parseInt(localStorage.getItem('dc_count')||'0');
+  totalMantras=parseInt(localStorage.getItem('dc_total_mantras')||'0');
+  malaTarget=parseInt(localStorage.getItem('dc_mala_target')||'108');
+  soundOn=localStorage.getItem('dc_sound')!=='off';
+  myIcon=localStorage.getItem('dc_icon')||'om';
+  selectedMantra=localStorage.getItem('dc_mantra')||DEFAULT_MANTRAS[0];
+  customMantras=JSON.parse(localStorage.getItem('dc_custom_mantras')||'[]');
+  following=JSON.parse(localStorage.getItem('dc_following')||'{}');
+
+  updateCountUI();
+  updateMantraPill();
+  document.getElementById('soundBtn').textContent=soundOn?'Sound ON':'Sound OFF';
+  document.getElementById('soundBtn').className='sound-btn'+(soundOn?'':' off');
+  document.getElementById('userNameDisplay').textContent=myName;
+
+  // Setup tap button — onclick use karo addEventListener nahi (double listener bug fix)
+  document.getElementById('tapBtn').onclick = handleTap;
+
+  // Long press / corner tap for secret access
+  setupSecretAccess();
+
+  // Init Firebase presence & listeners
+  initFirebase();
+
+  // Settings UI
+  updateSettingsUI();
+
+  // Notifications listener start karo
+  setTimeout(()=>{ listenNotifications(); updateNotifBadge(); }, 1000);
+}
+
+function updateCountUI() {
+  document.getElementById('countNum').textContent=count;
+  document.getElementById('countOf').textContent='of '+malaTarget;
+  document.getElementById('totalMantras').textContent=totalMantras;
+  const pct=Math.min(count/malaTarget,1);
+  const circ=2*Math.PI*80;
+  document.getElementById('circFill').style.strokeDashoffset=circ*(1-pct);
+  document.getElementById('circFill').style.strokeDasharray=circ;
+}
+
+function updateMantraPill() {
+  const short=selectedMantra.length>30?selectedMantra.substring(0,30)+'...':selectedMantra;
+  document.getElementById('mantraPill').textContent='📿 '+short;
+  document.getElementById('mantraFloat').textContent=selectedMantra;
+}
+
+// ===== TAP HANDLER =====
+function handleTap() {
+  count++;
+  if(count>malaTarget) count=1; // next mala
+  totalMantras++;
+  localStorage.setItem('dc_count',count);
+  localStorage.setItem('dc_total_mantras',totalMantras);
+  updateCountUI();
+  showMantraFloat();
+  playMantraVoice();
+
+  // Mala complete!
+  if(count===malaTarget) {
+    setTimeout(()=>toast('🎉 Ek Mala complete! '+malaTarget+' jaap ho gaye!'),300);
+  }
+}
+
+// ===== FLOATING MANTRA =====
+function showMantraFloat() {
+  const el=document.getElementById('mantraFloat');
+  el.textContent=selectedMantra;
+  el.classList.add('show');
+  clearTimeout(mantraFloatTimer);
+  mantraFloatTimer=setTimeout(()=>el.classList.remove('show'),1500);
+}
+
+// ===== VOICE =====
+function playMantraVoice() {
+  if(!soundOn||!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(selectedMantra);
+  u.lang='hi-IN'; u.rate=0.55; u.pitch=0.75; u.volume=1.0;
+  const voices=window.speechSynthesis.getVoices();
+  const v=voices.find(v=>v.lang==='hi-IN')||voices.find(v=>v.lang.startsWith('hi'))||voices.find(v=>v.lang==='en-IN');
+  if(v) u.voice=v;
+  setTimeout(()=>window.speechSynthesis.speak(u),80);
+}
+
+window.toggleSound=function(){
+  soundOn=!soundOn;
+  localStorage.setItem('dc_sound',soundOn?'on':'off');
+  document.getElementById('soundBtn').textContent=soundOn?'Sound ON':'Sound OFF';
+  document.getElementById('soundBtn').className='sound-btn'+(soundOn?'':' off');
+};
+
+window.restartMala=function(){
+  if(confirm('Mala restart karna chahte ho?')){ count=0; localStorage.setItem('dc_count','0'); updateCountUI(); }
+};
+
+// ===== SECRET ACCESS =====
+let _secretAccessSetup = false;
+function setupSecretAccess() {
+  if(_secretAccessSetup) return;
+  _secretAccessSetup = true;
+  let cornerTaps=0, cornerTimer=null;
+  document.addEventListener('click',e=>{
+    // Sirf counter screen pe active ho
+    const counterScreen=document.getElementById('counter');
+    if(!counterScreen.classList.contains('active')) return;
+    const x=e.clientX,y=e.clientY,w=window.innerWidth,h=window.innerHeight;
+    if(x>w*0.7&&y<h*0.15) {
+      cornerTaps++;
+      clearTimeout(cornerTimer);
+      if(cornerTaps>=3) { cornerTaps=0; askPasswordThenOpenChat(); }
+      else cornerTimer=setTimeout(()=>cornerTaps=0,1000);
+    }
+  });
+
+  // Long press on tap button (backup method)
+  let lpTimer=null;
+  const tb=document.getElementById('tapBtn');
+  tb.addEventListener('touchstart',e=>{ lpTimer=setTimeout(askPasswordThenOpenChat,2000); },{ passive:true });
+  tb.addEventListener('touchend',()=>clearTimeout(lpTimer));
+  tb.addEventListener('mousedown',()=>{ lpTimer=setTimeout(askPasswordThenOpenChat,2000); });
+  tb.addEventListener('mouseup',()=>clearTimeout(lpTimer));
+}
+
+function askPasswordThenOpenChat() {
+  // Password verify karke chat section kholo
+  cpMode='verify'; cpPin='';
+  document.getElementById('cpStep').textContent='SECRET SECTION';
+  document.getElementById('cpTitle').textContent='Password Daalo';
+  document.getElementById('cpSub').textContent='Chat section unlock karne ke liye';
+  updateCpDots();
+  // cpMode verify ke baad counter pe wapas nahi — chat list pe jayega
+  _afterVerifyGoChat=true;
+  showScreen('createPass');
+}
+let _afterVerifyGoChat=false;
+
+// ===== MANTRA MODAL =====
+window.openMantraModal=function(){
+  renderMantraList();
+  document.getElementById('mantraModal').classList.add('show');
+};
+window.closeMantraModal=function(){ document.getElementById('mantraModal').classList.remove('show'); };
+
+function renderMantraList() {
+  const el=document.getElementById('mantraListEl');
+  el.innerHTML='';
+  [...DEFAULT_MANTRAS,...customMantras].forEach(m=>{
+    const div=document.createElement('div');
+    div.className='mantra-item'+(m===selectedMantra?' selected':'');
+    div.innerHTML=`<span class="mantra-text">${m}</span><span>${m===selectedMantra?'✅':'○'}</span>`;
+    div.onclick=()=>{ selectedMantra=m; localStorage.setItem('dc_mantra',m); updateMantraPill(); renderMantraList(); closeMantraModal(); };
+    el.appendChild(div);
+  });
+}
+
+window.addMantra=function(){
+  const v=document.getElementById('mantraAddInp').value.trim();
+  if(!v) return;
+  customMantras.push(v);
+  localStorage.setItem('dc_custom_mantras',JSON.stringify(customMantras));
+  document.getElementById('mantraAddInp').value='';
+  renderMantraList();
+};
+
+// ===== FIREBASE INIT =====
+function genId(){ return Math.random().toString(36).substr(2,6).toUpperCase(); }
+function getTime(){ return new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}); }
+
+let _initFirebaseDone = false;
+function initFirebase() {
+  if(_initFirebaseDone) return;
+  _initFirebaseDone = true;
+  // myId auth se already set hai startApp mein
+  if(!myId) {
+    myId = localStorage.getItem('dc_my_id') || genId();
+    localStorage.setItem('dc_my_id', myId);
+  }
+
+  // Set online
+  const meRef=ref(db,`users/${myId}`);
+  set(meRef,{ name:myName, online:true, ts:Date.now(), icon:myIcon });
+  onDisconnect(meRef).update({ online:false });
+
+  // Listen for messages
+  onValue(ref(db,`inbox/${myId}`),snap=>{
+    if(!snap.exists()) return;
+    snap.forEach(child=>{
+      const d=child.val();
+      if(!d) return;
+      handleInboxMsg(d);
+      remove(child.ref); // signals delete ho jaate hain (seen/typing/call)
+    });
+  });
+
+  // Reload chat list whenever following changes
+  renderChatList();
+  // Background: existing chats ke messages ki sentAt load karo (unread count ke liye)
+  _loadAllChatSentAts();
+
+  // Listen for following status
+  Object.keys(following).forEach(uid=>listenUserStatus(uid));
+
+  updateSettingsUI();
+}
+
+function handleInboxMsg(d) {
+  if(d.type==='newmsg') {
+    // Sirf chat list update karo — koi notification nahi
+    // Chat list mein lastMsg update karo
+    updateChatListLocal(d.from, d.name||d.from, d.text||'[Media]', '');
+    // Agar ye chat abhi open nahi hai → unread mark karo
+    if(currentChatId !== d.from) {
+      markUnread(d.from);
+    }
+    renderChatList();
+  } else if(d.type==='seen') {
+    updateMsgTick(d.msgId,'seen');
+  } else if(d.type==='delivered') {
+    updateMsgTick(d.msgId,'delivered');
+  } else if(d.type==='typing') {
+    if(currentChatId===d.from) showTyping(d.typing);
+  }
+}
+
+// sendToUser: SIRF signals ke liye (seen, typing, call) - messages nahi
+async function sendToUser(uid,data) {
+  const key='sig_'+Date.now()+'_'+Math.random().toString(36).substr(2,4);
+  await set(ref(db,`inbox/${uid}/${key}`),data);
+}
+
+// Chat room ID — dono users ke beech shared
+function chatRoomId(u1,u2){ return [u1,u2].sort().join('__'); }
+
+// Chat list localStorage update helper — sirf meta store karo
+// Unread count = messages jinke sentAt > lastReadTs[uid]
+function updateChatListLocal(uid, name, lastMsg, lastTime, _unused=false) {
+  const chats = JSON.parse(localStorage.getItem('dc_chats')||'{}');
+  const prev = chats[uid] || {};
+  chats[uid] = {
+    name: name || prev.name || uid,
+    lastMsg: lastMsg !== undefined ? lastMsg : (prev.lastMsg||''),
+    lastTime: lastTime || prev.lastTime || '',
+    lastTs: (lastMsg !== undefined && lastMsg !== '') ? Date.now() : (prev.lastTs||0),
+  };
+  localStorage.setItem('dc_chats', JSON.stringify(chats));
+}
+
+// ── Simple flag-based unread system ──
+// dc_hasunread_<uid> = '1' matlab unread hai, missing/0 matlab sab padh liya
+function hasUnread(uid) {
+  return localStorage.getItem('dc_hasunread_'+uid) === '1';
+}
+function markUnread(uid) {
+  localStorage.setItem('dc_hasunread_'+uid, '1');
+}
+function markRead(uid) {
+  localStorage.removeItem('dc_hasunread_'+uid);
+}
+function getUnreadCount(uid) {
+  return hasUnread(uid) ? 1 : 0; // sirf badge ke liye, count nahi
+}
+function getTotalUnread() {
+  const chats = JSON.parse(localStorage.getItem('dc_chats')||'{}');
+  return Object.keys(chats).filter(uid => hasUnread(uid)).length;
+}
+// Legacy compat — koi jagah setLastReadTs/recordIncomingMsgTs call ho toh crash na ho
+function setLastReadTs(uid) { markRead(uid); }
+function recordIncomingMsgTs(uid, sentAt) {}
+async function _loadAllChatSentAts() { renderChatList(); }
+
+// Message permanently Firebase mein save karo
+async function sendChatMessage(toUid, msgData) {
+  const roomId = chatRoomId(myId, toUid);
+  const msgRef = push(ref(db,`chats/${roomId}/messages`));
+  const key = msgRef.key;
+  await set(msgRef, { ...msgData, key, sentAt: Date.now(), tick:'sent' });
+  // Receiver ko signal bhejo (foreground notification ke liye)
+  sendToUser(toUid, { type:'newmsg', from:myId, name:myName, text:msgData.text||'[Media]' }).catch(()=>{});
+  return key;
+}
+
+// FCM background push — receiver ka token Firebase se lo, phir push karo
+
+// Real-time listener for chat room — paginated (50 first, rest background)
+let _activeListener = null;
+let _activeChatUid = null;
+let _globalShownKeys = new Map(); // chatRoomId → Set of keys shown
+
+// ===== MESSAGE CACHE (localStorage) =====
+function _saveMsgCache(roomId, msgs) {
+  try { localStorage.setItem('dc_msgcache_'+roomId, JSON.stringify(msgs.slice(-50))); } catch(e){}
+}
+function _loadMsgCache(roomId) {
+  try { return JSON.parse(localStorage.getItem('dc_msgcache_'+roomId)||'[]'); } catch(e){ return []; }
+}
+
+function listenChat(uid) {
+  if(_activeListener) { _activeListener(); _activeListener=null; }
+  _activeChatUid = uid;
+  const roomId = chatRoomId(myId, uid);
+  const msgsArea = document.getElementById('msgsArea');
+
+  if(!_globalShownKeys.has(roomId)) _globalShownKeys.set(roomId, new Set());
+  const shownKeys = _globalShownKeys.get(roomId);
+
+  // INSTANT: Cache se turant dikhao (0ms) — unread count mat badao cache se
+  const cached = _loadMsgCache(roomId);
+  if(cached.length > 0) {
+    cached.forEach(({d, key}) => {
+      if(shownKeys.has(key)) return;
+      shownKeys.add(key);
+      _renderMsg(d, key, uid, roomId, true); // true = fromCache, unread count skip
+    });
+    msgsArea.scrollTop = msgsArea.scrollHeight;
+  }
+
+  // BACKGROUND: Firebase se fresh data, cache update karo
+  const { query: fbQuery, limitToLast, orderByKey } = window._fbQueryFns;
+  const roomRef = ref(db, `chats/${roomId}/messages`);
+  const newMsgs = [];
+
+  _activeListener = onValue(fbQuery(roomRef, orderByKey(), limitToLast(50)), snap => {
+    if(!snap.exists()) return;
+    snap.forEach(child => {
+      const d = child.val();
+      if(!d) return;
+      const cacheEntry = d.type==='image'
+        ? {d:{...d, data:'__cached__'}, key: child.key}
+        : {d, key: child.key};
+      newMsgs.push(cacheEntry);
+      if(shownKeys.has(child.key)) {
+        if(d.from===myId) {
+          if(d.seen || d.tick==='seen') updateMsgTick(child.key,'seen');
+          else if(d.delivered || d.tick==='delivered') updateMsgTick(child.key,'delivered');
+        }
+        return;
+      }
+      shownKeys.add(child.key);
+      _renderMsg(d, child.key, uid, roomId, false); // false = from Firebase, count unread
+    });
+    msgsArea.scrollTop = msgsArea.scrollHeight;
+    _saveMsgCache(roomId, newMsgs);
+  });
+}
+
+function _renderMsg(d, key, uid, roomId, fromCache=false) {
+  const msgsArea = document.getElementById('msgsArea');
+  const isChatOpen = (currentChatId === uid);
+  if(d.type==='chat'||!d.type) {
+    addMsg(d.text, d.from, d.name, d.time, key, d.replyTo||null);
+    if(d.from===myId) {
+      if(d.seen || d.tick==='seen') setTimeout(()=>updateMsgTick(key,'seen'), 80);
+      else if(d.delivered || d.tick==='delivered') setTimeout(()=>updateMsgTick(key,'delivered'), 80);
+    }
+  }
+  else if(d.type==='image') {
+    if(d.data==='__cached__') {
+      addImgPlaceholder(key, d.from, d.time);
+    } else {
+      addImgMsg(d.data, d.from, d.time, key);
+    }
+  }
+  else if(d.type==='file') addFileMsgEl(d, d.from);
+
+  // Incoming message handling
+  if(d.from !== myId) {
+    if(!fromCache) {
+      // Chat list mein lastMsg update karo
+      updateChatListLocal(uid, d.name||uid, d.type==='chat'?d.text:'[Media]', d.time);
+      // Chat band hai → unread mark karo | Chat khuli hai → already read
+      if(!isChatOpen) {
+        markUnread(uid);
+      }
+      renderChatList();
+    }
+
+    const alreadyDelivered = d.delivered || d.tick==='delivered' || d.tick==='seen' || d.seen;
+    if(!alreadyDelivered) {
+      set(ref(db,`chats/${roomId}/messages/${key}/delivered`), true).catch(()=>{});
+      set(ref(db,`chats/${roomId}/messages/${key}/tick`), 'delivered').catch(()=>{});
+      sendToUser(d.from, {type:'delivered', msgId:key, from:myId}).catch(()=>{});
+    }
+
+    if(!d.seen && d.tick!=='seen' && isChatOpen) {
+      set(ref(db,`chats/${roomId}/messages/${key}/seen`), true).catch(()=>{});
+      set(ref(db,`chats/${roomId}/messages/${key}/tick`), 'seen').catch(()=>{});
+      sendToUser(d.from, {type:'seen', msgId:key, from:myId}).catch(()=>{});
+    }
+  }
+}
+
+// ===== DELETE SINGLE CHAT =====
+// Long press popup for chat
+window.showChatLongPressMenu = function(uid, name) {
+  // Remove any existing popup
+  const existing = document.getElementById('lpPopup');
+  if(existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'lp-overlay';
+  overlay.id = 'lpPopup';
+
+  overlay.innerHTML = `
+    <div class="lp-popup">
+      <div class="lp-name">${escH(name)}</div>
+      <button class="lp-btn" onclick="openChat('${uid}','${escH(name)}');document.getElementById('lpPopup').remove();">
+        💬 Chat kholо
+      </button>
+      <button class="lp-btn warn" onclick="document.getElementById('lpPopup').remove();blockUser('${uid}','${escH(name)}')" style="color:#ffaa00;">
+        🚫 Block Karo
+      </button>
+      <button class="lp-btn danger" onclick="document.getElementById('lpPopup').remove();window.deleteSingleChat('${uid}')">
+        🗑️ Chat delete karo
+      </button>
+    </div>`;
+
+  // Tap outside = close
+  overlay.addEventListener('click', e => {
+    if(e.target === overlay) overlay.remove();
+  });
+
+  document.body.appendChild(overlay);
+};
+
+window.deleteSingleChat = function(uid) {
+  const chats = JSON.parse(localStorage.getItem('dc_chats')||'{}');
+  const name = chats[uid]?.name || uid;
+  if(!confirm(name+' ki chat delete karna chahte ho?')) return;
+  delete chats[uid];
+  localStorage.setItem('dc_chats', JSON.stringify(chats));
+  // Cache clear karo
+  if(myId) {
+    const roomId = chatRoomId(myId, uid);
+    localStorage.removeItem('dc_msgcache_'+roomId);
+    _globalShownKeys.delete(roomId);
+  }
+  // Online listener unsub
+  if(_onlineListeners.has(uid)) {
+    try { _onlineListeners.get(uid)(); } catch(e){}
+    _onlineListeners.delete(uid);
+  }
+  renderChatList();
+  toast(name+' ki chat delete ho gaya ✓');
+};
+
+// ===== CHAT LIST =====
+function saveChatMsg(uid,d) { /* no-op: Firebase handles storage */ }
+
+// Online status listeners — memory leak fix: ek baar subscribe karo, dobara nahi
+const _onlineListeners = new Map(); // uid → unsubscribe fn
+
+function renderChatList() {
+  const body=document.getElementById('chatListBody');
+  const chats=JSON.parse(localStorage.getItem('dc_chats')||'{}');
+  const keys=Object.keys(chats);
+  if(keys.length===0) {
+    body.innerHTML='<div class="empty-chats"><div style="font-size:40px">💬</div><div>Abhi koi chat nahi</div><div style="font-size:12px">People mein jaake kisi ka ID search karo aur chat karo</div></div>';
+    document.getElementById('bnBadge').style.display='none';
+    return;
+  }
+  keys.sort((a,b)=>{
+    const ta=chats[a].lastTs||0, tb=chats[b].lastTs||0;
+    return tb-ta;
+  });
+  body.innerHTML='';
+  let totalUnread=0;
+  keys.forEach(uid=>{
+    const c=chats[uid];
+    const unreadCnt = getUnreadCount(uid);
+    totalUnread += unreadCnt;
+
+    // Swipe-to-delete wrapper
+    const wrap=document.createElement('div');
+    wrap.className='chat-preview-wrap';
+
+    const inner=document.createElement('div');
+    inner.className='chat-preview-inner';
+
+    const av=document.createElement('div');
+    av.className='chat-preview';
+    // Unread ho toh name bold + lastMsg highlighted
+    const nameStyle = unreadCnt ? 'font-weight:700;color:var(--chat-text);' : '';
+    const lastStyle = unreadCnt ? 'color:var(--chat-text);font-weight:500;' : '';
+    av.innerHTML=`
+      <div class="cp-av">${(c.name||'?')[0].toUpperCase()}<div class="cp-online" id="online-${uid}" style="display:none"></div></div>
+      <div class="cp-info">
+        <div class="cp-name" style="${nameStyle}">${escH(c.name||uid)}</div>
+        <div class="cp-last" style="${lastStyle}">${escH(c.lastMsg||'')}</div>
+      </div>
+      <div class="cp-right">
+        <div class="cp-time" style="${unreadCnt?'color:var(--chat-accent);font-weight:600;':''}">${escH(c.lastTime||'')}</div>
+        ${unreadCnt?'<div class="unread-badge">New Msg</div>':'' }
+      </div>`;
+    av.onclick=()=>openChat(uid,c.name||uid);
+
+    // Long press → delete popup
+    let lpTimer=null;
+    av.addEventListener('touchstart',e=>{
+      lpTimer=setTimeout(()=>{
+        lpTimer=null;
+        showChatLongPressMenu(uid, c.name||uid);
+      },600);
+    },{passive:true});
+    av.addEventListener('touchend',()=>{ if(lpTimer){clearTimeout(lpTimer);lpTimer=null;} });
+    av.addEventListener('touchmove',()=>{ if(lpTimer){clearTimeout(lpTimer);lpTimer=null;} });
+
+    inner.appendChild(av);
+    wrap.appendChild(inner);
+    body.appendChild(wrap);
+
+    // Online status listener
+    if(!_onlineListeners.has(uid)) {
+      const unsub = onValue(ref(db,`users/${uid}/online`),s=>{
+        const el=document.getElementById('online-'+uid);
+        if(el) el.style.display=s.val()?'block':'none';
+      });
+      _onlineListeners.set(uid, unsub);
+    }
+  });
+  const badge=document.getElementById('bnBadge');
+  const tot=getTotalUnread();
+  if(tot>0){ badge.style.display='block'; badge.textContent=''; }
+  else { badge.style.display='none'; }
+}
+
+window.openChat=async function(uid,name) {
+  // Block check — agar blocked hai toh chat nahi kholenge
+  if(isBlocked(uid)){
+    toast('Tum ne is user ko block kiya hua hai 🚫'); return;
+  }
+  const theyBlockedMe = await get(ref(db,`blocked/${uid}/${myId}`)).then(s=>s.val()).catch(()=>false);
+  if(theyBlockedMe){
+    toast('Is user ne tumhe block kar diya hai 🚫'); return;
+  }
+  currentChatId=uid; currentChatName=name;
+  document.getElementById('chatPartnerName').textContent=name;
+  document.getElementById('chatAvatar').textContent=(name[0]||'?').toUpperCase();
+  document.getElementById('chatStatus').textContent='...';
+  document.getElementById('chatStatus').className='chat-hst';
+
+  // Clear messages area
+  const msgsArea=document.getElementById('msgsArea');
+  msgsArea.innerHTML='<div class="sys-msg">🔒 Private • Encrypted</div>';
+
+  // Reset input
+  const inp=document.getElementById('msgInp');
+  inp.value=''; inp.style.height='auto';
+  const btn=document.getElementById('sendBtn');
+  if(btn) btn.textContent='➤';
+
+  // Chat kholte hi → read mark karo, badge hat jaayega
+  markRead(uid);
+  renderChatList();
+
+  // Firebase se messages load karo (real-time)
+  listenChat(uid);
+
+  // Online status — aur jab bhi status change ho update karo
+  onValue(ref(db,`users/${uid}/online`),s=>{
+    const stEl=document.getElementById('chatStatus');
+    if(stEl){ stEl.textContent=s.val()?'Online':'Offline'; stEl.className='chat-hst'+(s.val()?' online':''); }
+  });
+
+  showScreen('chatScreen');
+}
+
+window.refreshChat=function(){
+  if(!currentChatId) return;
+  const roomId=chatRoomId(myId,currentChatId);
+  // Cache aur shown keys clear karo
+  localStorage.removeItem('dc_msgcache_'+roomId);
+  _globalShownKeys.delete(roomId);
+  // Messages area clear karo
+  const msgsArea=document.getElementById('msgsArea');
+  msgsArea.innerHTML='<div class="sys-msg">🔒 Private • Encrypted</div>';
+  // Reload
+  listenChat(currentChatId);
+  toast('Chat refresh ho gaya ✓');
+};
+
+window.closeChatScreen=function(){
+  // Listener band karo
+  if(_activeListener){ _activeListener(); _activeListener=null; }
+  // Wapas jaate waqt bhi read mark karo
+  if(currentChatId) markRead(currentChatId);
+  currentChatId=null; currentChatName='';
+  showScreen('chatsListScreen');
+  renderChatList();
+};
+
+function listenUserStatus(uid) {
+  onValue(ref(db,`users/${uid}/online`),()=>{});
+}
+
+// ===== FOLLOW REQUEST SYSTEM =====
+// Firebase paths:
+// followRequests/{toUid}/{fromUid} = { from, name, status:'pending'|'accepted'|'rejected', ts }
+// blocked/{myUid}/{blockedUid} = true
+// notifications/{uid}/{notifId} = { type, from, name, ts, read, status }
+
+// Local blocked cache
+function getBlockedList() {
+  return JSON.parse(localStorage.getItem('dc_blocked')||'{}');
+}
+function isBlocked(uid) {
+  return !!getBlockedList()[uid];
+}
+function setBlockedLocal(uid, val) {
+  const b = getBlockedList();
+  if(val) b[uid]=true; else delete b[uid];
+  localStorage.setItem('dc_blocked', JSON.stringify(b));
+}
+
+// Request status cache
+function getRequestStatus(uid) {
+  const s = JSON.parse(localStorage.getItem('dc_reqstatus')||'{}');
+  return s[uid] || null; // 'pending'|'accepted'|'sent'
+}
+function setRequestStatus(uid, status) {
+  const s = JSON.parse(localStorage.getItem('dc_reqstatus')||'{}');
+  if(status) s[uid]=status; else delete s[uid];
+  localStorage.setItem('dc_reqstatus', JSON.stringify(s));
+}
+
+// ===== NOTIFICATIONS =====
+function getNotifications() {
+  return JSON.parse(localStorage.getItem('dc_notifs')||'[]');
+}
+function saveNotifications(notifs) {
+  localStorage.setItem('dc_notifs', JSON.stringify(notifs.slice(0,50)));
+}
+function addLocalNotif(notif) {
+  const notifs = getNotifications();
+  // Deduplicate same-type from same person
+  const filtered = notifs.filter(n=>!(n.from===notif.from && n.type===notif.type));
+  filtered.unshift({ ...notif, id: Date.now()+'_'+Math.random().toString(36).slice(2), read:false, ts: Date.now() });
+  saveNotifications(filtered);
+  updateNotifBadge();
+}
+function updateNotifBadge() {
+  const notifs = getNotifications();
+  const unread = notifs.filter(n=>!n.read).length;
+  const badge = document.getElementById('bnNotifBadge');
+  if(badge) badge.style.display = unread > 0 ? 'block' : 'none';
+}
+
+window.clearAllNotifs = function() {
+  saveNotifications([]);
+  updateNotifBadge();
+  renderNotifications();
+};
+
+window.renderNotifications = function() {
+  const body = document.getElementById('notifBody');
+  if(!body) return;
+  const notifs = getNotifications();
+  // Mark all as read when screen is opened
+  const updated = notifs.map(n=>({...n, read:true}));
+  saveNotifications(updated);
+  updateNotifBadge();
+
+  if(notifs.length === 0) {
+    body.innerHTML=`<div class="notif-empty"><div style="font-size:44px;">🔔</div><div>Abhi koi notification nahi</div><div style="font-size:12px;margin-top:4px;">Follow requests aur responses yahan dikhenge</div></div>`;
+    return;
+  }
+  body.innerHTML='';
+  notifs.forEach(n => {
+    const div = document.createElement('div');
+    div.className = 'notif-item' + (n.read?'':' unread');
+    const timeAgo = _timeAgo(n.ts);
+    let inner = '';
+    const avLetter = (n.name||'?')[0].toUpperCase();
+
+    if(n.type === 'follow_request') {
+      inner = `
+        <div class="notif-av">${avLetter}</div>
+        <div class="notif-content">
+          <div class="notif-text"><strong>${escH(n.name)}</strong> ne tumhe follow request bheja hai</div>
+          <div class="notif-time">${timeAgo}</div>
+          ${n.status==='pending' ? `<div class="notif-actions">
+            <button class="notif-accept-btn" onclick="acceptFollowRequest('${n.from}','${escH(n.name)}','${n.id}')">✅ Accept</button>
+            <button class="notif-reject-btn" onclick="rejectFollowRequest('${n.from}','${escH(n.name)}','${n.id}')">❌ Reject</button>
+          </div>` : `<div style="font-size:12px;margin-top:6px;color:${n.status==='accepted'?'#4CAF50':'var(--chat-muted)'};">${n.status==='accepted'?'✅ Accept kiya':'❌ Reject kiya'}</div>`}
+        </div>`;
+    } else if(n.type === 'request_accepted') {
+      inner = `
+        <div class="notif-av">${avLetter}</div>
+        <div class="notif-content">
+          <div class="notif-text"><strong>${escH(n.name)}</strong> ne teri follow request accept kar li! 🎉</div>
+          <div class="notif-time">${timeAgo}</div>
+          <div style="margin-top:8px;"><button onclick="openChat('${n.from}','${escH(n.name)}')" style="background:linear-gradient(135deg,var(--chat-accent),#ff8c00);color:#fff;border:none;border-radius:12px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">💬 Chat Kholo</button></div>
+        </div>`;
+    } else if(n.type === 'request_rejected') {
+      inner = `
+        <div class="notif-av">${avLetter}</div>
+        <div class="notif-content">
+          <div class="notif-text"><strong>${escH(n.name)}</strong> ne teri follow request reject kar di</div>
+          <div class="notif-time">${timeAgo}</div>
+        </div>`;
+    } else if(n.type === 'blocked') {
+      inner = `
+        <div class="notif-av sys">🚫</div>
+        <div class="notif-content">
+          <div class="notif-text"><strong>${escH(n.name)}</strong> ne tujhe block kar diya</div>
+          <div class="notif-time">${timeAgo}</div>
+        </div>`;
+    } else if(n.type === 'unblocked') {
+      inner = `
+        <div class="notif-av sys">✅</div>
+        <div class="notif-content">
+          <div class="notif-text"><strong>${escH(n.name)}</strong> ne tujhe unblock kar diya</div>
+          <div class="notif-time">${timeAgo}</div>
+        </div>`;
+    }
+    div.innerHTML = inner;
+    body.appendChild(div);
+  });
+};
+
+function _timeAgo(ts) {
+  if(!ts) return '';
+  const diff = Date.now() - ts;
+  const m = Math.floor(diff/60000);
+  if(m < 1) return 'Abhi abhi';
+  if(m < 60) return m + ' min pehle';
+  const h = Math.floor(m/60);
+  if(h < 24) return h + ' ghante pehle';
+  return Math.floor(h/24) + ' din pehle';
+}
+
+// ===== SEND FOLLOW REQUEST =====
+window.sendFollowRequest = async function(uid, name) {
+  if(!myId) return;
+  if(isBlocked(uid)) { toast('Tujhe block kiya hua hai'); return; }
+
+  // Check if B has blocked A
+  const blockedSnap = await get(ref(db, `blocked/${uid}/${myId}`));
+  if(blockedSnap.val()) { toast('Request nahi bhej sakte'); return; }
+
+  // Save request in Firebase: followRequests/{toUid}/{fromUid}
+  await set(ref(db, `followRequests/${uid}/${myId}`), {
+    from: myId, name: myName, status: 'pending', ts: Date.now()
+  });
+  // Send notification to receiver via Firebase
+  await set(ref(db, `notifications/${uid}/${myId}_freq`), {
+    type: 'follow_request', from: myId, name: myName,
+    status: 'pending', ts: Date.now(), read: false
+  });
+  setRequestStatus(uid, 'sent');
+  toast('Follow request bhej diya ✓');
+  renderPeople();
+  renderSearchResults_fromCache(uid, name);
+};
+
+// ===== ACCEPT FOLLOW REQUEST =====
+window.acceptFollowRequest = async function(fromUid, fromName, notifId) {
+  if(!myId) return;
+  // Update request status
+  await set(ref(db, `followRequests/${myId}/${fromUid}/status`), 'accepted');
+  // Add to following on both sides
+  following[fromUid] = { name: fromName, uid: fromUid };
+  localStorage.setItem('dc_following', JSON.stringify(following));
+  listenUserStatus(fromUid);
+  // Notify sender: request accepted
+  await set(ref(db, `notifications/${fromUid}/${myId}_acc`), {
+    type: 'request_accepted', from: myId, name: myName, ts: Date.now(), read: false
+  });
+  // Update local notif status
+  const notifs = getNotifications();
+  const idx = notifs.findIndex(n=>n.id===notifId);
+  if(idx>=0) { notifs[idx].status='accepted'; saveNotifications(notifs); }
+  toast(fromName + ' ka follow accept kar liya ✅');
+  renderNotifications();
+  renderPeople();
+  renderChatList();
+};
+
+// ===== REJECT FOLLOW REQUEST =====
+window.rejectFollowRequest = async function(fromUid, fromName, notifId) {
+  if(!myId) return;
+  await set(ref(db, `followRequests/${myId}/${fromUid}/status`), 'rejected');
+  // Notify sender
+  await set(ref(db, `notifications/${fromUid}/${myId}_rej`), {
+    type: 'request_rejected', from: myId, name: myName, ts: Date.now(), read: false
+  });
+  // Update local notif
+  const notifs = getNotifications();
+  const idx = notifs.findIndex(n=>n.id===notifId);
+  if(idx>=0) { notifs[idx].status='rejected'; saveNotifications(notifs); }
+  toast(fromName + ' ki request reject kar di ❌');
+  renderNotifications();
+};
+
+// ===== BLOCK USER =====
+window.blockUser = async function(uid, name) {
+  if(!myId) return;
+  if(!confirm(name + ' ko block karna chahte ho?')) return;
+  // Firebase mein block set karo
+  await set(ref(db, `blocked/${myId}/${uid}`), true);
+  setBlockedLocal(uid, true);
+  // Notify the blocked user
+  await set(ref(db, `notifications/${uid}/${myId}_blk`), {
+    type: 'blocked', from: myId, name: myName, ts: Date.now(), read: false
+  });
+  // Remove from following
+  if(following[uid]) { delete following[uid]; localStorage.setItem('dc_following',JSON.stringify(following)); }
+  // Remove request if any
+  await set(ref(db, `followRequests/${uid}/${myId}`), null).catch(()=>{});
+  toast(name + ' ko block kar diya 🚫');
+  updateBlockedCount();
+  renderPeople();
+};
+
+// ===== UNBLOCK USER =====
+window.unblockUser = async function(uid, name) {
+  if(!myId) return;
+  await set(ref(db, `blocked/${myId}/${uid}`), null);
+  setBlockedLocal(uid, false);
+  // Notify the unblocked user
+  await set(ref(db, `notifications/${uid}/${myId}_ublk`), {
+    type: 'unblocked', from: myId, name: myName, ts: Date.now(), read: false
+  });
+  toast(name + ' ko unblock kar diya ✅');
+  updateBlockedCount();
+  renderPeople();
+};
+
+// ===== LISTEN FOR INCOMING NOTIFICATIONS =====
+let _notifListener = null;
+function listenNotifications() {
+  if(!myId || _notifListener) return;
+  _notifListener = onValue(ref(db, `notifications/${myId}`), snap => {
+    if(!snap.exists()) return;
+    snap.forEach(child => {
+      const d = child.val();
+      if(!d) return;
+      const localNotifs = getNotifications();
+      const alreadyHave = localNotifs.some(n=>n.firebaseKey===child.key);
+      if(alreadyHave) return;
+      // Add to local — id field zaroori hai accept/reject ke liye
+      const notif = { ...d, id: child.key, firebaseKey: child.key, read: false };
+      const filtered = localNotifs.filter(n=>!(n.from===d.from && n.type===d.type));
+      filtered.unshift(notif);
+      saveNotifications(filtered);
+      updateNotifBadge();
+    });
+  });
+}
+
+// ===== REFRESH NOTIFICATIONS =====
+window.refreshNotifications = async function() {
+  if(!myId) return;
+  const btn = document.getElementById('notifRefreshBtn');
+  // Spinning animation
+  if(btn) { btn.textContent='⏳'; btn.disabled=true; }
+  try {
+    const snap = await get(ref(db, `notifications/${myId}`));
+    if(snap.exists()) {
+      let localNotifs = getNotifications();
+      snap.forEach(child => {
+        const d = child.val();
+        if(!d) return;
+        const alreadyHave = localNotifs.some(n=>n.firebaseKey===child.key);
+        if(alreadyHave) return;
+        const notif = { ...d, id: child.key, firebaseKey: child.key, read: false };
+        localNotifs = localNotifs.filter(n=>!(n.from===d.from && n.type===d.type));
+        localNotifs.unshift(notif);
+      });
+      saveNotifications(localNotifs);
+    }
+    updateNotifBadge();
+    renderNotifications();
+    toast('Notifications refresh ho gayi ✓');
+  } catch(e) {
+    toast('Refresh nahi hua, dobara try karo');
+  } finally {
+    if(btn) { btn.textContent='🔄'; btn.disabled=false; }
+  }
+};
+
+// ===== SEARCH USER =====
+let _lastSearchUid = null, _lastSearchName = null;
+function renderSearchResults_fromCache(uid, name) {
+  if(_lastSearchUid === uid) searchUser_render(uid, name);
+}
+
+let _searchUserTimer = null;
+window.searchUser=function(val) {
+  val=val.trim().toUpperCase();
+  const res=document.getElementById('searchResults');
+  if(!val||val.length<1) { res.innerHTML=''; _lastSearchUid=null; return; }
+  if(val.length<6) { res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">6 letters ka ID daalo...</div>'; _lastSearchUid=null; return; }
+  if(val===myId) { res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">Ye tera apna ID hai! 😄</div>'; return; }
+
+  clearTimeout(_searchUserTimer);
+  res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">🔍 Dhundh raha hai...</div>';
+  _searchUserTimer = setTimeout(async ()=>{
+    try {
+      const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000));
+      const snap = await Promise.race([get(ref(db,`users/${val}`)), timeoutPromise]);
+      if(snap.exists()) {
+        const u=snap.val();
+        _lastSearchUid = val; _lastSearchName = u.name||val;
+        searchUser_render(val, u.name||val, u.online);
+      } else {
+        res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">❌ User nahi mila — ID sahi se check karo</div>';
+        _lastSearchUid=null;
+      }
+    } catch(e) {
+      if(e.message==='timeout') {
+        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:8px;">⚠️ Network slow hai — dobara try karo</div>';
+      } else {
+        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:8px;">⚠️ Error aaya — dobara try karo</div>';
+      }
+      _lastSearchUid=null;
+    }
+  }, 400);
+};
+
+async function searchUser_render(uid, name, online) {
+  const res=document.getElementById('searchResults');
+  if(!res) return;
+  // Check request status from Firebase
+  const reqSnap = await get(ref(db, `followRequests/${uid}/${myId}`));
+  const reqData = reqSnap.val();
+  const blockedMe = (await get(ref(db, `blocked/${uid}/${myId}`))).val();
+  const iBlockedThem = isBlocked(uid);
+  const isAccepted = following[uid] || (reqData && reqData.status==='accepted');
+  const isPending = !isAccepted && reqData && reqData.status==='pending';
+
+  let actionBtn = '';
+  if(iBlockedThem) {
+    actionBtn = `<button class="follow-req-btn blocked" style="cursor:default;">🚫 Blocked</button>
+    <button onclick="unblockUser('${uid}','${escH(name)}')" style="background:none;border:1px solid var(--chat-border);color:var(--chat-muted);border-radius:20px;padding:8px 12px;font-size:11px;cursor:pointer;font-family:'Poppins',sans-serif;">Unblock</button>`;
+  } else if(blockedMe) {
+    actionBtn = `<button class="follow-req-btn blocked" style="cursor:default;">Request N/A</button>`;
+  } else if(isAccepted) {
+    actionBtn = `<button class="follow-req-btn accepted" onclick="openChat('${uid}','${escH(name)}')" style="cursor:pointer;">💬 Chat</button>
+    <button onclick="showUserOptions('${uid}','${escH(name)}')" class="u-more-btn">⋮</button>`;
+  } else if(isPending) {
+    actionBtn = `<button onclick="openChat('${uid}','${escH(name)}')" class="chat-btn" style="margin-right:6px;">💬 Chat</button>
+    <button class="follow-req-btn pending" style="cursor:default;">⏳ Pending</button>`;
+  } else {
+    // Koi follow nahi — phir bhi chat kar sakte hain, follow bhi kar sakte hain
+    actionBtn = `<button onclick="openChat('${uid}','${escH(name)}')" class="chat-btn" style="margin-right:6px;">💬 Chat</button>
+    <button class="follow-req-btn" onclick="sendFollowRequest('${uid}','${escH(name)}')">+ Follow</button>`;
+  }
+
+  res.innerHTML=`
+    <div class="section-label">Search Result</div>
+    <div class="user-row">
+      <div class="u-av">${(name||'?')[0].toUpperCase()}</div>
+      <div class="u-info">
+        <div class="u-name">${escH(name)}</div>
+        <div class="u-status ${online?'online':''}">${online?'Online':'Offline'}</div>
+      </div>
+      <div class="u-row-actions">${actionBtn}</div>
+    </div>`;
+}
+
+// Show options popup for following users (block/unfollow)
+window.showUserOptions = function(uid, name) {
+  const existing = document.getElementById('userOptPopup');
+  if(existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.className='block-overlay'; overlay.id='userOptPopup';
+  overlay.innerHTML=`<div class="block-popup">
+    <div class="block-popup-name">${escH(name)}</div>
+    <button class="block-popup-btn" onclick="openChat('${uid}','${escH(name)}');document.getElementById('userOptPopup').remove();">💬 Chat Kholo</button>
+    <button class="block-popup-btn warn" onclick="unfollowUser('${uid}','${escH(name)}');document.getElementById('userOptPopup').remove();">👋 Unfollow</button>
+    <button class="block-popup-btn danger" onclick="blockUser('${uid}','${escH(name)}');document.getElementById('userOptPopup').remove();">🚫 Block Karo</button>
+    <button class="block-popup-btn" onclick="document.getElementById('userOptPopup').remove();">✕ Cancel</button>
+  </div>`;
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+  document.body.appendChild(overlay);
+};
+
+window.unfollowUser = function(uid, name) {
+  if(!confirm(name + ' ko unfollow karna chahte ho?')) return;
+  delete following[uid];
+  localStorage.setItem('dc_following',JSON.stringify(following));
+  toast(name + ' ko unfollow kar diya');
+  renderPeople();
+  renderChatList();
+};
+
+window.toggleFollow=function(uid,name){
+  // Legacy — now redirects to request system
+  sendFollowRequest(uid, name);
+};
+
+function renderPeople() {
+  const fl=document.getElementById('followingList');
+  if(!fl) return;
+  fl.innerHTML='';
+
+  // Show blocked users section too
+  const blocked = getBlockedList();
+  const blockedKeys = Object.keys(blocked);
+
+  if(Object.keys(following).length === 0 && blockedKeys.length === 0) {
+    fl.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:12px 0;text-align:center;">Abhi koi following nahi<br><span style="font-size:11px;">Search karke follow request bhejo</span></div>';
+    return;
+  }
+
+  Object.values(following).forEach(u=>{
+    const div=document.createElement('div');
+    div.className='user-row';
+    div.innerHTML=`
+      <div class="u-av">${(u.name||'?')[0].toUpperCase()}</div>
+      <div class="u-info"><div class="u-name">${escH(u.name)}</div><div class="u-status" id="fst-${u.uid}">...</div></div>
+      <div class="u-row-actions">
+        <button class="follow-req-btn accepted" onclick="openChat('${u.uid}','${escH(u.name)}')">💬 Chat</button>
+        <button onclick="showUserOptions('${u.uid}','${escH(u.name)}')" class="u-more-btn">⋮</button>
+      </div>`;
+    fl.appendChild(div);
+    onValue(ref(db,`users/${u.uid}/online`),s=>{
+      const el=document.getElementById('fst-'+u.uid);
+      if(el){ el.textContent=s.val()?'Online':'Offline'; el.className='u-status'+(s.val()?' online':''); }
+    });
+  });
+
+  // Blocked users
+  if(blockedKeys.length > 0) {
+    const label = document.createElement('div');
+    label.className='section-label'; label.textContent='🚫 Blocked';
+    fl.appendChild(label);
+    blockedKeys.forEach(uid => {
+      // Try to get name from following or chats cache
+      const chats = JSON.parse(localStorage.getItem('dc_chats')||'{}');
+      const name = chats[uid]?.name || uid;
+      const div = document.createElement('div');
+      div.className='user-row';
+      div.innerHTML=`
+        <div class="u-av" style="background:rgba(100,100,100,0.3);color:var(--chat-muted);">${name[0].toUpperCase()}</div>
+        <div class="u-info"><div class="u-name" style="color:var(--chat-muted);">${escH(name)}</div><div class="u-status">Blocked</div></div>
+        <div class="u-row-actions">
+          <button onclick="unblockUser('${uid}','${escH(name)}')" style="background:none;border:1px solid rgba(244,67,54,0.3);color:#f44336;border-radius:20px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;">Unblock</button>
+        </div>`;
+      fl.appendChild(div);
+    });
+  }
+}
+
+// ===== MESSAGING =====
+window.msgKey=function(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();} };
+window.msgResize=function(el){
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,100)+'px';
+};
+
+window.sendMsg=async function(){
+  const inp=document.getElementById('msgInp');
+  const text=inp.value.trim();
+  if(!text||!currentChatId) return;
+  // Block check — agar dono mein se kisi ne bhi block kiya hai toh message nahi jaayega
+  if(isBlocked(currentChatId)){
+    toast('Tum ne is user ko block kiya hua hai 🚫'); return;
+  }
+  const theyBlockedMe = await get(ref(db,`blocked/${currentChatId}/${myId}`)).then(s=>s.val()).catch(()=>false);
+  if(theyBlockedMe){
+    toast('Is user ne tumhe block kar diya hai 🚫'); return;
+  }
+  const t=getTime();
+  inp.value=''; 
+  inp.style.height='auto';
+  inp.focus(); // Keyboard band na ho — focus rakho
+  // Reset send button to send arrow
+  const btn=document.getElementById('sendBtn');
+  if(btn) btn.textContent='➤';
+  const capturedReply=replyTo;
+  if(replyTo) cancelReply();
+  // Firebase mein save karo — listener khud message screen pe dikhayega
+  const msgData={type:'chat',text,from:myId,name:myName,time:t};
+  if(capturedReply) msgData.replyTo={text:capturedReply.text,msgId:capturedReply.msgId};
+  await sendChatMessage(currentChatId, msgData);
+  // Chat list localStorage update karo
+  updateChatListLocal(currentChatId, currentChatName, text, t);
+  renderChatList();
+};
+
+function addMsg(text,from,name,time,msgId,replyData) {
+  const area=document.getElementById('msgsArea');
+  const me=from===myId;
+  const w=document.createElement('div');
+  w.className='msg-wrap '+(me?'me':'them');
+  w.dataset.msgid=msgId||'';
+
+  let replyHtml='';
+  if(replyData&&replyData.text){
+    replyHtml=`<div class="reply-preview">↩ ${escH(replyData.text.substring(0,60))}</div>`;
+  }
+
+  w.innerHTML=`
+    ${replyHtml}
+    <div class="msg-bubble">${escH(text)}</div>
+    <div class="msg-meta">
+      <span class="msg-time">${time||''}</span>
+      ${me?`<span class="msg-tick sent" id="tick-${msgId}"><span style="color:#666;font-size:12px;">✓</span></span>`:''}
+    </div>`;
+
+  // Long press → context menu
+  let lpTimer=null;
+  let lpY=0;
+  const onLpStart=(e)=>{
+    lpY=e.touches?e.touches[0].clientY:e.clientY;
+    lpTimer=setTimeout(()=>{
+      _ctxMsg={text,id:msgId,src:null};
+      showCtxMenu({text,id:msgId}, lpY, me);
+    },500);
+  };
+  const onLpEnd=()=>clearTimeout(lpTimer);
+  w.addEventListener('touchstart',onLpStart,{passive:true});
+  w.addEventListener('touchend',onLpEnd);
+  w.addEventListener('touchmove',onLpEnd,{passive:true});
+  w.addEventListener('mousedown',onLpStart);
+  w.addEventListener('mouseup',onLpEnd);
+
+  // Swipe right to reply
+  let startX=0;
+  w.addEventListener('touchstart',e=>startX=e.touches[0].clientX,{passive:true});
+  w.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-startX;
+    if(dx>60&&!me){ replyTo={text,msgId}; showReplyBar(text); }
+    if(dx<-60&&me){ replyTo={text,msgId}; showReplyBar(text); }
+  });
+
+  area.appendChild(w);
+  area.scrollTop=area.scrollHeight;
+}
+
+function addImgMsg(dataUrl, fromUid, time, msgKey) {
+  const area=document.getElementById('msgsArea');
+  const isMe = fromUid === myId;
+  // Agar placeholder already hai to replace karo
+  if(msgKey) {
+    const existing=document.querySelector(`.img-placeholder[data-key="${msgKey}"]`);
+    if(existing) { existing.remove(); }
+  }
+  const w=document.createElement('div');
+  w.className='msg-wrap '+(isMe?'me':'them');
+
+  const imgEl=document.createElement('img');
+  imgEl.style.cssText='max-width:220px;max-height:240px;border-radius:14px;object-fit:cover;cursor:pointer;display:block;';
+  imgEl.src=dataUrl;
+  imgEl.onclick=()=>openImgViewer(dataUrl,'photo_'+Date.now()+'.jpg');
+
+  const dlBtn=document.createElement('button');
+  dlBtn.className='dl-btn';
+  dlBtn.innerHTML='⬇ Save';
+  dlBtn.onclick=(e)=>{ e.stopPropagation(); downloadImg(dataUrl,'photo_'+Date.now()+'.jpg'); };
+
+  const meta=document.createElement('div');
+  meta.className='msg-meta';
+  const tickId='tick-img-'+Date.now();
+  meta.innerHTML=`<span class="msg-time">${time||''}</span>${isMe?`<span class="msg-tick sent" id="${tickId}"><span style="color:#666;font-size:12px;">✓</span></span>`:''}`;
+
+  w.appendChild(imgEl);
+  w.appendChild(dlBtn);
+  w.appendChild(meta);
+  area.appendChild(w);
+  area.scrollTop=area.scrollHeight;
+}
+
+function addImgPlaceholder(msgKey, fromUid, time) {
+  const area=document.getElementById('msgsArea');
+  const isMe = fromUid === myId;
+  const w=document.createElement('div');
+  w.className='msg-wrap img-placeholder '+(isMe?'me':'them');
+  w.dataset.key=msgKey;
+  w.innerHTML=`<div style="width:180px;height:120px;border-radius:14px;background:var(--chat-surface);border:1px solid var(--chat-border);display:flex;align-items:center;justify-content:center;color:var(--chat-muted);font-size:12px;">📷 Loading...</div>
+  <div class="msg-meta"><span class="msg-time">${time||''}</span></div>`;
+  area.appendChild(w);
+}
+
+function addFileMsgEl(d, fromUid) {
+  const area=document.getElementById('msgsArea');
+  const w=document.createElement('div');
+  const isMe = fromUid === myId;
+  w.className='msg-wrap '+(isMe?'me':'them');
+
+  const isVideo = d.mime && d.mime.startsWith('video/');
+  const isImgFile = d.mime && d.mime.startsWith('image/');
+
+  // Build blob URL from base64 data
+  let blobUrl='';
+  if(d.data){
+    try{
+      const raw = d.data.includes(',') ? d.data.split(',')[1] : d.data;
+      const bytes = atob(raw);
+      const arr = new Uint8Array(bytes.length);
+      for(let i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i);
+      blobUrl = URL.createObjectURL(new Blob([arr],{type:d.mime||'application/octet-stream'}));
+    }catch(e){ console.warn('Blob error',e); }
+  }
+
+  if(isImgFile && blobUrl){
+    // Image file — show thumbnail + viewer
+    const img=document.createElement('img');
+    img.style.cssText='max-width:220px;max-height:240px;border-radius:14px;object-fit:cover;cursor:pointer;display:block;';
+    img.src=blobUrl;
+    img.onclick=()=>openImgViewer(blobUrl, d.fileName||'image.jpg');
+    const dlBtn=document.createElement('button');
+    dlBtn.className='dl-btn';
+    dlBtn.innerHTML='⬇ Save';
+    dlBtn.onclick=(e)=>{ e.stopPropagation(); triggerDownload(blobUrl, d.fileName||'image.jpg'); };
+    const meta=document.createElement('div');
+    meta.className='msg-meta';
+    meta.innerHTML=`<span class="msg-time">${d.time||''}</span>`;
+    w.appendChild(img); w.appendChild(dlBtn); w.appendChild(meta);
+
+  } else if(isVideo && blobUrl){
+    // Video — thumbnail play button + open viewer
+    const videoWrap=document.createElement('div');
+    videoWrap.style.cssText='position:relative;max-width:220px;cursor:pointer;';
+    const vid=document.createElement('video');
+    vid.style.cssText='width:220px;max-height:180px;border-radius:14px;display:block;object-fit:cover;';
+    vid.src=blobUrl; vid.preload='metadata'; vid.playsInline=true;
+    // Play button overlay
+    const playBtn=document.createElement('div');
+    playBtn.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:50px;height:50px;background:rgba(0,0,0,0.6);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;pointer-events:none;';
+    playBtn.textContent='▶';
+    videoWrap.appendChild(vid); videoWrap.appendChild(playBtn);
+    videoWrap.onclick=()=>openVideoViewer(blobUrl, d.fileName||'video.mp4');
+    const dlBtn=document.createElement('button');
+    dlBtn.className='dl-btn';
+    dlBtn.innerHTML='⬇ Download';
+    dlBtn.onclick=(e)=>{ e.stopPropagation(); triggerDownload(blobUrl, d.fileName||'video.mp4'); };
+    const meta=document.createElement('div');
+    meta.className='msg-meta';
+    meta.innerHTML=`<span class="msg-time">${d.time||''}</span>`;
+    w.appendChild(videoWrap); w.appendChild(dlBtn); w.appendChild(meta);
+
+  } else {
+    // Generic file
+    const bubble=document.createElement('div');
+    bubble.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:'+(isMe?'var(--chat-accent)':'var(--chat-surface)')+';color:'+(isMe?'#fff':'var(--chat-text)')+';border:'+(isMe?'none':'1px solid var(--chat-border)')+';cursor:pointer;';
+    bubble.innerHTML=`<span style="font-size:28px">📄</span><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;">${escH(d.fileName||d.name||'File')}</div><div style="font-size:11px;opacity:0.7;margin-top:2px;">${d.size||''}</div></div><span style="font-size:18px">⬇</span>`;
+    if(blobUrl) bubble.onclick=()=>triggerDownload(blobUrl, d.fileName||d.name||'file');
+    const meta=document.createElement('div');
+    meta.className='msg-meta';
+    meta.innerHTML=`<span class="msg-time">${d.time||''}</span>`;
+    w.appendChild(bubble); w.appendChild(meta);
+  }
+
+  area.appendChild(w);
+  area.scrollTop=area.scrollHeight;
+}
+
+function triggerDownload(url, filename){
+  const a=document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  toast('Download shuru ho gaya ✓');
+}
+
+function saveHistMsg(uid,d) { /* no-op: Firebase handles history */ }
+
+function updateMsgTick(msgId,state) {
+  const el=document.getElementById('tick-'+msgId);
+  if(!el) return;
+  if(state==='seen'){
+    el.className='msg-tick seen';
+    el.innerHTML='<span style="color:#4fc3f7;font-size:12px;letter-spacing:-2px;">✓✓</span>';
+  } else if(state==='delivered'){
+    el.className='msg-tick delivered';
+    el.innerHTML='<span style="color:#999;font-size:12px;letter-spacing:-2px;">✓✓</span>';
+  } else {
+    el.className='msg-tick sent';
+    el.innerHTML='<span style="color:#666;font-size:12px;">✓</span>';
+  }
+}
+
+function showTyping(typing) {
+  const el=document.getElementById('chatStatus');
+  if(!el) return;
+  el.textContent=typing?'Typing...':'Online';
+  el.className='chat-hst'+(typing?' typing':' online');
+}
+
+// Typing indicator send
+document.getElementById('msgInp').addEventListener('input',()=>{
+  if(!currentChatId) return;
+  sendToUser(currentChatId,{type:'typing',typing:true,from:myId});
+  clearTimeout(window._typingTimer);
+  window._typingTimer=setTimeout(()=>sendToUser(currentChatId,{type:'typing',typing:false,from:myId}),1500);
+});
+
+// Reply
+window.showReplyBar=function(text){
+  const bar=document.getElementById('replyBar');
+  document.getElementById('replyBarText').textContent='↩ '+text.substring(0,50);
+  bar.style.display='flex';
+};
+window.cancelReply=function(){ replyTo=null; document.getElementById('replyBar').style.display='none'; };
+
+// ===== FILE SEND — Sirf Images =====
+window.sendFile=async function(inp){
+  const file = inp.files[0];
+  if(!file || !currentChatId) return;
+  inp.value='';
+
+  if(!file.type.startsWith('image/')) { toast('Sirf photos bhej sakte ho'); return; }
+
+  const MAX_IMG = 10*1024*1024; // 10MB
+  if(file.size > MAX_IMG){ toast('Image 10MB se choti honi chahiye'); return; }
+
+  toast('Photo bhej raha hai... ⏳');
+
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const res = e.target.result;
+    const t = getTime();
+    compressAndSend(res, file, t);
+  };
+  reader.onerror = () => toast('File read nahi ho payi');
+  reader.readAsDataURL(file);
+};
+
+async function compressAndSend(dataUrl, file, t){
+  const chatId = currentChatId; // capture at call time
+  try{
+    const img=new Image();
+    img.onload=async function(){
+      const canvas=document.createElement('canvas');
+      const MAX_DIM=1280;
+      let w=img.width, h=img.height;
+      if(w>MAX_DIM||h>MAX_DIM){
+        if(w>h){ h=Math.round(h*MAX_DIM/w); w=MAX_DIM; }
+        else { w=Math.round(w*MAX_DIM/h); h=MAX_DIM; }
+      }
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const compressed=canvas.toDataURL('image/jpeg',0.75);
+      const d={type:'image',data:compressed,from:myId,name:myName,time:t};
+      await sendChatMessage(chatId,d);
+      toast('Photo bhej di ✓');
+    };
+    img.onerror=async function(){
+      // fallback — send as-is
+      const d={type:'image',data:dataUrl,from:myId,name:myName,time:t};
+      await sendChatMessage(chatId,d);
+    };
+    img.src=dataUrl;
+  }catch(e){
+    const d={type:'image',data:dataUrl,from:myId,name:myName,time:t};
+    await sendChatMessage(chatId,d);
+  }
+}
+
+// ===== CALL FUNCTIONS REMOVED =====
+
+// ===== SETTINGS =====
+window.setMyIcon = function(n) {
+  myIcon = n;
+  localStorage.setItem('dc_icon', n);
+  updateSettingsUI();
+  if(myId) set(ref(db,`users/${myId}/icon`), n).catch(()=>{});
+};
+
+function updateSettingsUI() {
+  const shortId = myId || '-';
+  document.getElementById('settingsName').textContent=myName||'-';
+  document.getElementById('settingsId').textContent='ID: '+shortId;
+  document.getElementById('myIdDisplay').textContent=shortId;
+  document.getElementById('malaTargetDisplay').textContent=malaTarget+' per mala';
+  updateBlockedCount();
+
+  // Notification toggle removed
+
+  // Icon picker — null-safe
+  ['om','mala','pranam','lotus'].forEach(n=>{
+    const el = document.getElementById('ip-'+n);
+    if(el) el.classList.toggle('selected',n===myIcon);
+  });
+
+  // Avatar
+  if(myAvatar) {
+    document.getElementById('settingsAv').innerHTML=`<img src="${myAvatar}">`;
+  } else {
+    document.getElementById('settingsAv').textContent=(myName||'?')[0].toUpperCase();
+  }
+}
+
+let _settingsSearchTimer = null;
+window.searchUserFromSettings=function(val){
+  val=val.trim().toUpperCase();
+  const res=document.getElementById('settingsSearchResults');
+  if(!val||val.length<1){ res.innerHTML=''; return; }
+  if(val.length<6){ res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">6 letters ka ID daalo (e.g. AB12XY)...</div>'; return; }
+  if(val===myId){ res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">Ye tera apna ID hai! 😄</div>'; return; }
+
+  // Debounce — 400ms baad search karo
+  clearTimeout(_settingsSearchTimer);
+  res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">🔍 Dhundh raha hai...</div>';
+  _settingsSearchTimer = setTimeout(async ()=>{
+    try {
+      // Timeout wrapper — 8 seconds
+      const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000));
+      const snap = await Promise.race([get(ref(db,`users/${val}`)), timeoutPromise]);
+      if(snap.exists()){
+        const u=snap.val();
+        const name = u.name||val;
+        const reqSnap = await get(ref(db, `followRequests/${val}/${myId}`));
+        const reqData = reqSnap.val();
+        const iBlockedThem = isBlocked(val);
+        const isAccepted = following[val] || (reqData && reqData.status==='accepted');
+        const isPending = !isAccepted && reqData && reqData.status==='pending';
+        let actionBtn = '';
+        if(iBlockedThem) {
+          actionBtn = `<button onclick="unblockUser('${val}','${escH(name)}')" style="background:none;border:1px solid rgba(244,67,54,0.4);color:#f44336;border-radius:20px;padding:7px 14px;font-size:11px;cursor:pointer;font-family:'Poppins',sans-serif;">Unblock</button>`;
+        } else if(isAccepted) {
+          actionBtn = `<button onclick="openChat('${val}','${escH(name)}');document.getElementById('settingsSearchBar').value='';document.getElementById('settingsSearchResults').innerHTML='';" style="background:var(--chat-accent);color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;">💬 Chat</button>`;
+        } else if(isPending) {
+          actionBtn = `<button class="follow-req-btn pending" style="cursor:default;padding:7px 14px;font-size:12px;">⏳ Pending</button>`;
+        } else {
+          actionBtn = `<button onclick="sendFollowRequest('${val}','${escH(name)}')" class="follow-req-btn" style="padding:7px 14px;font-size:12px;">+ Follow</button>`;
+        }
+        res.innerHTML=`
+          <div class="user-row" style="margin-top:0">
+            <div class="u-av">${(name||'?')[0].toUpperCase()}</div>
+            <div class="u-info">
+              <div class="u-name">${escH(name)}</div>
+              <div class="u-status ${u.online?'online':''}">${u.online?'✅ Online':'⚫ Offline'}</div>
+            </div>
+            ${actionBtn}
+          </div>`;
+      } else {
+        res.innerHTML=`<div style="color:var(--chat-muted);font-size:12px;padding:4px;">❌ User nahi mila — ID sahi se check karo</div>`;
+      }
+    } catch(e) {
+      if(e.message==='timeout') {
+        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:4px;">⚠️ Network slow hai — dobara try karo</div>';
+      } else {
+        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:4px;">⚠️ Error aaya — dobara try karo</div>';
+      }
+    }
+  }, 400);
+};
+
+window.copyMyId=function(){
+  if(!myId) return;
+  navigator.clipboard.writeText(myId).then(()=>toast('ID copy ho gaya ✓')).catch(()=>toast('ID: '+myId));
+};
+
+window.changePassword=function(){
+  cpMode='change'; cpPin='';
+  document.getElementById('cpStep').textContent='PEHLE PURANA DAALO';
+  document.getElementById('cpTitle').textContent='Purana Password Daalo';
+  document.getElementById('cpSub').textContent='Verify karo';
+  updateCpDots();
+  showScreen('createPass');
+};
+
+
+
+
+window.changeMalaTarget=function(){
+  const v=prompt('Mala target kitna rakhna hai?',malaTarget);
+  if(v&&!isNaN(v)&&parseInt(v)>0){
+    malaTarget=parseInt(v);
+    localStorage.setItem('dc_mala_target',malaTarget);
+    document.getElementById('malaTargetDisplay').textContent=malaTarget+' per mala';
+    updateCountUI();
+    toast('Target '+malaTarget+' set ho gaya!');
+  }
+};
+
+window.editProfile=function(){
+  const name=prompt('Naya naam:',myName);
+  if(name&&name.trim()){ myName=name.trim(); localStorage.setItem('dc_name',myName); updateSettingsUI(); document.getElementById('userNameDisplay').textContent=myName; toast('Profile update ho gaya!'); }
+};
+
+window.clearAllChats=function(){
+  if(confirm('Saari chats delete karna chahte ho?')){
+    localStorage.removeItem('dc_chats');
+    Object.keys(following).forEach(uid=>localStorage.removeItem('dc_hist_'+uid));
+    renderChatList();
+    toast('Sab clear ho gaya ✓');
+  }
+};
+
+// ===== BLOCKED USERS POPUP =====
+window.showBlockedUsers = function() {
+  const blocked = getBlockedList();
+  const blockedKeys = Object.keys(blocked);
+  const existing = document.getElementById('blockedPopup');
+  if(existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'block-overlay';
+  overlay.id = 'blockedPopup';
+
+  let listHtml = '';
+  if(blockedKeys.length === 0) {
+    listHtml = '<div style="text-align:center;padding:24px 0;color:var(--chat-muted);font-size:13px;">Koi blocked nahi hai</div>';
+  } else {
+    const chats = JSON.parse(localStorage.getItem('dc_chats')||'{}');
+    blockedKeys.forEach(uid => {
+      const name = chats[uid]?.name || uid;
+      listHtml += `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--chat-border);">
+          <div style="width:38px;height:38px;border-radius:50%;background:rgba(100,100,100,0.3);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--chat-muted);">${(name[0]||'?').toUpperCase()}</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;color:var(--chat-muted);">${escH(name)}</div>
+            <div style="font-size:11px;color:#f44336;">Blocked</div>
+          </div>
+          <button onclick="unblockUser('${uid}','${escH(name)}');document.getElementById('blockedPopup').remove();" 
+            style="background:none;border:1px solid rgba(244,67,54,0.4);color:#f44336;border-radius:20px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;">
+            Unblock
+          </button>
+        </div>`;
+    });
+  }
+
+  overlay.innerHTML = `
+    <div class="block-popup" style="max-height:70vh;overflow-y:auto;">
+      <div class="block-popup-name" style="font-size:15px;">🚫 Blocked Users</div>
+      <div style="padding:0 4px;">${listHtml}</div>
+      <button class="block-popup-btn" style="margin-top:12px;" onclick="document.getElementById('blockedPopup').remove();">✕ Close</button>
+    </div>`;
+
+  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+};
+
+// Blocked count settings mein update karo
+function updateBlockedCount() {
+  const el = document.getElementById('blockedCountDisplay');
+  if(!el) return;
+  const count = Object.keys(getBlockedList()).length;
+  el.textContent = count + ' blocked';
+}
+
+// ===== SCREEN NAV =====
+window.navTo=function(id){ showScreen(id); };
+
+// Chat section lock karke counter pe wapas jao
+window.lockAndGoCounter=function(){
+  showScreen('counter');
+};
+
+// ===== TOAST =====
+window.toast=function(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+};
+
+// ===== UTILS =====
+function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtSz(b){ if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
+
+// ===== IMAGE VIEWER =====
+let _viewerSrc='', _viewerName='image.jpg';
+window.openImgViewer=function(src, name='photo.jpg'){
+  _viewerSrc=src; _viewerName=name;
+  const img=document.getElementById('imgViewerImg');
+  img.src=src;
+  document.getElementById('imgViewer').classList.add('show');
+};
+window.closeImgViewer=function(){
+  document.getElementById('imgViewer').classList.remove('show');
+  document.getElementById('imgViewerImg').src='';
+  _viewerSrc='';
+};
+window.downloadViewerImg=function(){
+  if(_viewerSrc) triggerDownload(_viewerSrc, _viewerName);
+};
+
+// Swipe down to close image viewer
+(function(){
+  let startY=0;
+  const viewer=document.getElementById('imgViewer');
+  viewer.addEventListener('touchstart',e=>{ startY=e.touches[0].clientY; },{passive:true});
+  viewer.addEventListener('touchend',e=>{
+    if(e.changedTouches[0].clientY - startY > 80) closeImgViewer();
+  });
+  // Tap outside image to close
+  viewer.addEventListener('click',e=>{
+    if(e.target===viewer) closeImgViewer();
+  });
+})();
+
+// ===== VIDEO VIEWER =====
+let _vidViewerSrc='', _vidViewerName='video.mp4';
+window.openVideoViewer=function(src, name='video.mp4'){
+  _vidViewerSrc=src; _vidViewerName=name;
+  const vid=document.getElementById('videoViewerVid');
+  vid.src=src;
+  vid.load();
+  vid.play().catch(()=>{});
+  document.getElementById('videoViewer').classList.add('show');
+};
+window.closeVideoViewer=function(){
+  const vid=document.getElementById('videoViewerVid');
+  vid.pause(); vid.src='';
+  document.getElementById('videoViewer').classList.remove('show');
+  _vidViewerSrc='';
+};
+window.downloadViewerVid=function(){
+  if(_vidViewerSrc) triggerDownload(_vidViewerSrc, _vidViewerName);
+};
+
+// Swipe down to close video viewer
+(function(){
+  let startY=0;
+  const viewer=document.getElementById('videoViewer');
+  viewer.addEventListener('touchstart',e=>{ startY=e.touches[0].clientY; },{passive:true});
+  viewer.addEventListener('touchend',e=>{
+    if(e.changedTouches[0].clientY - startY > 80) closeVideoViewer();
+  });
+})();
+
+function downloadImg(src, name){ triggerDownload(src, name); }
+
+window.toggleAttachMenu=function(){
+  const menu=document.getElementById('attachMenu');
+  menu.classList.toggle('show');
+};
+window.pickFile=function(accept){
+  document.getElementById('attachMenu').classList.remove('show');
+  const inp=document.getElementById('fileInput');
+  inp.accept='image/*'; inp.click();
+};
+window.openCamera=function(){
+  document.getElementById('attachMenu').classList.remove('show');
+  document.getElementById('cameraInput').click();
+};
+// Close attach menu on outside tap
+document.addEventListener('click',e=>{
+  const menu=document.getElementById('attachMenu');
+  if(menu.classList.contains('show')&&!e.target.closest('.attach-btn')&&!e.target.closest('.attach-menu')){
+    menu.classList.remove('show');
+  }
+});
+
+let _ctxLastY=200;
+
+// ===== CONTEXT MENU =====
+let _ctxMsg=null;
+function showCtxMenu(data, touchY, isRight){
+  _ctxMsg=data;
+  _ctxLastY=touchY;
+  const ctx=document.getElementById('msgContext');
+  const dlItem=document.getElementById('ctxDlItem');
+  if(dlItem) dlItem.style.display=data.src?'flex':'none';
+  // Position
+  const menuH=150;
+  let top=touchY-menuH-10;
+  if(top<10) top=touchY+10;
+  ctx.style.top=top+'px';
+  ctx.style.left=isRight?'auto':'12px';
+  ctx.style.right=isRight?'12px':'auto';
+  ctx.classList.add('show');
+}
+window.ctxReply=function(){
+  if(_ctxMsg){replyTo={text:_ctxMsg.text||'',msgId:_ctxMsg.id};showReplyBar(_ctxMsg.text||'');}
+  document.getElementById('msgContext').classList.remove('show');
+};
+window.ctxCopy=function(){
+  if(_ctxMsg&&_ctxMsg.text){navigator.clipboard.writeText(_ctxMsg.text).then(()=>toast('Copy ho gaya ✓')).catch(()=>toast('Copy nahi hua'));}
+  document.getElementById('msgContext').classList.remove('show');
+};
+window.ctxDownload=function(){
+  if(_ctxMsg&&_ctxMsg.src){downloadImg(_ctxMsg.src,'media.jpg');}
+  document.getElementById('msgContext').classList.remove('show');
+};
+document.addEventListener('click',e=>{
+  const ctx=document.getElementById('msgContext');
+  if(ctx.classList.contains('show')&&!e.target.closest('.msg-context')){
+    ctx.classList.remove('show');
+  }
+});
+
+// ===== CHAT INFO =====
+window.openChatInfo=function(){
+  if(!currentChatId) return;
+  toast(currentChatName+' — ID: '+currentChatId);
+};
+
+// ===== APP START =====
+const _appStartTime = Date.now();
+
+function handleAuthUser(user) {
+  if(_authHandled) return;
+  _authHandled = true;
+
+  if(!user) { showScreen('googleLogin'); return; }
+
+  const shortId = user.uid.substr(0,6).toUpperCase();
+  myId = shortId;
+  localStorage.setItem('dc_my_id', shortId);
+
+  // Name Google se lo agar missing hai
+  if(!myName && user.displayName) {
+    myName = user.displayName;
+    localStorage.setItem('dc_name', myName);
+  }
+
+  // Same UID ka saved data restore karo (logout ke baad wapas login pe)
+  const uidPass   = localStorage.getItem('dc_pass_'+shortId);
+  const uidSetup  = localStorage.getItem('dc_setup_done_'+shortId);
+  const uidName   = localStorage.getItem('dc_name_'+shortId);
+  const uidAvatar = localStorage.getItem('dc_avatar_'+shortId);
+  if(uidPass   && !localStorage.getItem('dc_pass'))       localStorage.setItem('dc_pass', uidPass);
+  if(uidSetup  && !localStorage.getItem('dc_setup_done')) localStorage.setItem('dc_setup_done','1');
+  if(uidName   && !localStorage.getItem('dc_name'))       { localStorage.setItem('dc_name', uidName); myName=uidName; }
+  if(uidAvatar && !localStorage.getItem('dc_avatar'))     { localStorage.setItem('dc_avatar', uidAvatar); myAvatar=uidAvatar; }
+
+  const savedPass = localStorage.getItem('dc_pass');
+  const setupDone = localStorage.getItem('dc_setup_done');
+
+  if(!savedPass){ cpMode='create'; cpPin=''; cpFirst=''; showScreen('createPass'); return; }
+  if(!setupDone){ showScreen('profileSetup'); return; }
+
+  migratePasswordIfNeeded().then(()=>{
+    showScreen('counter');
+    initMain();
+  });
+}
+
+function startApp() {
+  const savedName=localStorage.getItem('dc_name');
+  const savedAvatar=localStorage.getItem('dc_avatar');
+  if(savedName) myName=savedName;
+  if(savedAvatar) myAvatar=savedAvatar;
+
+  const nav=document.getElementById('bottomNav');
+  if(nav) nav.style.display='none';
+
+  // onAuthStateChanged — sirf ONCE register karo, sab handle karta hai
+  // redirect, popup, already-logged-in, logged-out — sab
+  onAuthStateChanged(auth, (user) => {
+    if(user) {
+      // User logged in hai — onboard check karo
+      const onboardDone = localStorage.getItem('dc_onboard_done');
+      if(!onboardDone) {
+        // Onboard dikhao but user ko yaad rakho
+        showScreen('onboard');
+        return;
+      }
+      handleAuthUser(user);
+    } else {
+      // User logged out
+      const onboardDone = localStorage.getItem('dc_onboard_done');
+      if(!onboardDone) {
+        showScreen('onboard');
+      } else {
+        showScreen('googleLogin');
+      }
+    }
+  });
+}
+
+// Preload voices
+if('speechSynthesis' in window) {
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();
+}
+
+// Service Worker — FCM wala setup karta hai setupFCM() mein
+
+startApp();
+</script>
+</body>
+</html>
