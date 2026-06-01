@@ -8,8 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#f5efe0">
 <link rel="manifest" href="/manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 :root {
   --cream: #f7f0e2;
   --cream2: #ede3cc;
@@ -31,6 +31,8 @@
   --chat-text: #f0f0f0;
   --chat-muted: #666;
 }
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--brown2); height:100dvh; overflow:hidden; }
@@ -1212,7 +1214,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 
 import { getDatabase, ref, set, push, onValue, remove, onDisconnect, get, update, serverTimestamp, query as fbQuery, limitToLast, orderByKey }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut }
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 // Expose query helpers for paginated loading
@@ -2299,7 +2301,6 @@ window.acceptFollowRequest = async function(fromUid, fromName, notifId) {
   // Add to following on both sides
   following[fromUid] = { name: fromName, uid: fromUid };
   localStorage.setItem('dc_following', JSON.stringify(following));
-  listenUserStatus(fromUid);
   // Notify sender: request accepted
   await set(ref(db, `notifications/${fromUid}/${myId}_acc`), {
     type: 'request_accepted', from: myId, name: myName, ts: Date.now(), read: false
@@ -2346,7 +2347,6 @@ window.blockUser = async function(uid, name) {
   // Remove request if any
   await set(ref(db, `followRequests/${uid}/${myId}`), null).catch(()=>{});
   toast(name + ' ko block kar diya 🚫');
-  updateBlockedCount();
   renderPeople();
 };
 
@@ -2360,7 +2360,6 @@ window.unblockUser = async function(uid, name) {
     type: 'unblocked', from: myId, name: myName, ts: Date.now(), read: false
   });
   toast(name + ' ko unblock kar diya ✅');
-  updateBlockedCount();
   renderPeople();
 };
 
@@ -2376,8 +2375,8 @@ function listenNotifications() {
       const localNotifs = getNotifications();
       const alreadyHave = localNotifs.some(n=>n.firebaseKey===child.key);
       if(alreadyHave) return;
-      // Add to local — id field zaroori hai accept/reject ke liye
-      const notif = { ...d, id: child.key, firebaseKey: child.key, read: false };
+      // Add to local
+      const notif = { ...d, firebaseKey: child.key, read: false };
       const filtered = localNotifs.filter(n=>!(n.from===d.from && n.type===d.type));
       filtered.unshift(notif);
       saveNotifications(filtered);
@@ -2401,7 +2400,7 @@ window.refreshNotifications = async function() {
         if(!d) return;
         const alreadyHave = localNotifs.some(n=>n.firebaseKey===child.key);
         if(alreadyHave) return;
-        const notif = { ...d, id: child.key, firebaseKey: child.key, read: false };
+        const notif = { ...d, firebaseKey: child.key, read: false };
         localNotifs = localNotifs.filter(n=>!(n.from===d.from && n.type===d.type));
         localNotifs.unshift(notif);
       });
@@ -2904,7 +2903,6 @@ function updateSettingsUI() {
   document.getElementById('settingsId').textContent='ID: '+shortId;
   document.getElementById('myIdDisplay').textContent=shortId;
   document.getElementById('malaTargetDisplay').textContent=malaTarget+' per mala';
-  updateBlockedCount();
 
   // Notification toggle removed
 
@@ -3019,58 +3017,6 @@ window.clearAllChats=function(){
     toast('Sab clear ho gaya ✓');
   }
 };
-
-// ===== BLOCKED USERS POPUP =====
-window.showBlockedUsers = function() {
-  const blocked = getBlockedList();
-  const blockedKeys = Object.keys(blocked);
-  const existing = document.getElementById('blockedPopup');
-  if(existing) existing.remove();
-
-  const overlay = document.createElement('div');
-  overlay.className = 'block-overlay';
-  overlay.id = 'blockedPopup';
-
-  let listHtml = '';
-  if(blockedKeys.length === 0) {
-    listHtml = '<div style="text-align:center;padding:24px 0;color:var(--chat-muted);font-size:13px;">Koi blocked nahi hai</div>';
-  } else {
-    const chats = JSON.parse(localStorage.getItem('dc_chats')||'{}');
-    blockedKeys.forEach(uid => {
-      const name = chats[uid]?.name || uid;
-      listHtml += `
-        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--chat-border);">
-          <div style="width:38px;height:38px;border-radius:50%;background:rgba(100,100,100,0.3);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--chat-muted);">${(name[0]||'?').toUpperCase()}</div>
-          <div style="flex:1;">
-            <div style="font-size:13px;font-weight:600;color:var(--chat-muted);">${escH(name)}</div>
-            <div style="font-size:11px;color:#f44336;">Blocked</div>
-          </div>
-          <button onclick="unblockUser('${uid}','${escH(name)}');document.getElementById('blockedPopup').remove();" 
-            style="background:none;border:1px solid rgba(244,67,54,0.4);color:#f44336;border-radius:20px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;">
-            Unblock
-          </button>
-        </div>`;
-    });
-  }
-
-  overlay.innerHTML = `
-    <div class="block-popup" style="max-height:70vh;overflow-y:auto;">
-      <div class="block-popup-name" style="font-size:15px;">🚫 Blocked Users</div>
-      <div style="padding:0 4px;">${listHtml}</div>
-      <button class="block-popup-btn" style="margin-top:12px;" onclick="document.getElementById('blockedPopup').remove();">✕ Close</button>
-    </div>`;
-
-  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
-  document.body.appendChild(overlay);
-};
-
-// Blocked count settings mein update karo
-function updateBlockedCount() {
-  const el = document.getElementById('blockedCountDisplay');
-  if(!el) return;
-  const count = Object.keys(getBlockedList()).length;
-  el.textContent = count + ' blocked';
-}
 
 // ===== SCREEN NAV =====
 window.navTo=function(id){ showScreen(id); };
@@ -3269,20 +3215,28 @@ function startApp() {
   const nav=document.getElementById('bottomNav');
   if(nav) nav.style.display='none';
 
+  // Mobile redirect ke baad result lo
+  getRedirectResult(auth).then(result => {
+    if(result && result.user) {
+      // Redirect se wapas aaye — onAuthStateChanged bhi fire karega
+      // Kuch nahi karna, onAuthStateChanged handle karega
+    }
+  }).catch(e => {
+    if(e.code !== 'auth/no-current-user') {
+      console.warn('Redirect result error:', e.message);
+    }
+  });
+
   // onAuthStateChanged — sirf ONCE register karo, sab handle karta hai
-  // redirect, popup, already-logged-in, logged-out — sab
   onAuthStateChanged(auth, (user) => {
     if(user) {
-      // User logged in hai — onboard check karo
       const onboardDone = localStorage.getItem('dc_onboard_done');
       if(!onboardDone) {
-        // Onboard dikhao but user ko yaad rakho
         showScreen('onboard');
         return;
       }
       handleAuthUser(user);
     } else {
-      // User logged out
       const onboardDone = localStorage.getItem('dc_onboard_done');
       if(!onboardDone) {
         showScreen('onboard');
