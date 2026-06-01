@@ -1214,7 +1214,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 
 import { getDatabase, ref, set, push, onValue, remove, onDisconnect, get, update, serverTimestamp, query as fbQuery, limitToLast, orderByKey }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut }
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 // Expose query helpers for paginated loading
@@ -3215,26 +3215,11 @@ function startApp() {
   const nav=document.getElementById('bottomNav');
   if(nav) nav.style.display='none';
 
-  // Mobile redirect ke baad result lo
-  getRedirectResult(auth).then(result => {
-    if(result && result.user) {
-      // Redirect se wapas aaye — onAuthStateChanged bhi fire karega
-      // Kuch nahi karna, onAuthStateChanged handle karega
-    }
-  }).catch(e => {
-    if(e.code !== 'auth/no-current-user') {
-      console.warn('Redirect result error:', e.message);
-    }
-  });
-
   // onAuthStateChanged — sirf ONCE register karo, sab handle karta hai
   onAuthStateChanged(auth, (user) => {
     if(user) {
-      const onboardDone = localStorage.getItem('dc_onboard_done');
-      if(!onboardDone) {
-        showScreen('onboard');
-        return;
-      }
+      // User logged in hai — onboard_done force set karo (redirect ke baad loop fix)
+      localStorage.setItem('dc_onboard_done','1');
       handleAuthUser(user);
     } else {
       const onboardDone = localStorage.getItem('dc_onboard_done');
