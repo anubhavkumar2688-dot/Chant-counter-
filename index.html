@@ -1869,6 +1869,24 @@ function listenChat(uid) {
         : {d, key: child.key};
       newMsgs.push(cacheEntry);
       if(shownKeys.has(child.key)) {
+        // Message already shown — check if it was edited
+        if(d.type==='chat'||!d.type) {
+          const existingWrap=document.querySelector(`.msg-wrap[data-msgid="${child.key}"]`);
+          if(existingWrap && d.edited){
+            const bubble=existingWrap.querySelector('.msg-bubble');
+            if(bubble && bubble.textContent !== d.text) {
+              bubble.textContent=d.text;
+              if(!existingWrap.querySelector('.edited-label')){
+                const lbl=document.createElement('span');
+                lbl.className='edited-label';
+                lbl.style.cssText='font-size:9px;color:rgba(255,255,255,0.4);margin-left:6px;font-style:italic;';
+                lbl.textContent='edited';
+                const meta=existingWrap.querySelector('.msg-meta');
+                if(meta) meta.insertBefore(lbl, meta.firstChild);
+              }
+            }
+          }
+        }
         if(d.from===myId) {
           if(d.seen || d.tick==='seen') updateMsgTick(child.key,'seen');
           else if(d.delivered || d.tick==='delivered') updateMsgTick(child.key,'delivered');
@@ -2647,23 +2665,17 @@ window.sendMsg=async function(){
     const msgId=window._editingMsgId;
     window._editingMsgId=null;
     cancelReply();
-    const roomId=chatRoomId(myId,currentChatId);
-    set(ref(db,`chats/${roomId}/messages/${msgId}/text`), text).catch(()=>{});
-    set(ref(db,`chats/${roomId}/messages/${msgId}/edited`), true).catch(()=>{});
-    const msgWrap=document.querySelector(`.msg-wrap[data-msgid="${msgId}"]`);
-    if(msgWrap){
-      const bubble=msgWrap.querySelector('.msg-bubble');
-      if(bubble) bubble.textContent=text;
-      if(!msgWrap.querySelector('.edited-label')){
-        const lbl=document.createElement('span');
-        lbl.className='edited-label';
-        lbl.style.cssText='font-size:9px;color:rgba(255,255,255,0.5);margin-left:4px;';
-        lbl.textContent='edited';
-        const meta=msgWrap.querySelector('.msg-meta');
-        if(meta) meta.appendChild(lbl);
-      }
-    }
     inp.value=''; inp.style.height='auto';
+    if(!msgId){ toast('Cannot edit this message'); return; }
+    const roomId=chatRoomId(myId,currentChatId);
+    // Update text + edited flag in Firebase — receiver's listener will pick it up
+    const updates={};
+    updates[`chats/${roomId}/messages/${msgId}/text`]=text;
+    updates[`chats/${roomId}/messages/${msgId}/edited`]=true;
+    updates[`chats/${roomId}/messages/${msgId}/editedAt`]=Date.now();
+    update(ref(db), updates).catch(()=>{});
+    // Update bubble in DOM immediately for sender
+    _applyMsgEdit(msgId, text);
     toast('Message edited ✓');
     return;
   }
@@ -2716,8 +2728,10 @@ function addMsg(text,from,name,time,msgId,replyData) {
   const onLpStart=(e)=>{
     lpY=e.touches?e.touches[0].clientY:e.clientY;
     lpTimer=setTimeout(()=>{
-      _ctxMsg={text,id:msgId,src:null,isMe:me};
-      showCtxMenu({text,id:msgId,isMe:me}, lpY, me);
+      // isMe check: from===myId
+      const isMine=from===myId;
+      _ctxMsg={text,id:msgId,src:null,isMe:isMine};
+      showCtxMenu({text,id:msgId,isMe:isMine}, lpY, isMine);
     },500);
   };
   const onLpEnd=()=>clearTimeout(lpTimer);
@@ -3213,7 +3227,7 @@ function showCtxMenu(data, touchY, isRight){
   const editItem=document.getElementById('ctxEditItem');
   if(dlItem) dlItem.style.display=data.src?'flex':'none';
   // Show Edit only for own text messages
-  if(editItem) editItem.style.display=(data.isMe && data.text && !data.src)?'flex':'none';
+  if(editItem) editItem.style.display=(data.isMe && data.text)?'flex':'none';
   const menuH=180;
   let top=touchY-menuH-10;
   if(top<10) top=touchY+10;
@@ -3263,6 +3277,22 @@ window.ctxDownload=function(){
   if(_ctxMsg&&_ctxMsg.src){downloadImg(_ctxMsg.src,'media.jpg');}
   document.getElementById('msgContext').classList.remove('show');
 };
+
+// Helper: update a message bubble in DOM
+function _applyMsgEdit(msgId, newText){
+  const msgWrap=document.querySelector(`.msg-wrap[data-msgid="${msgId}"]`);
+  if(!msgWrap) return;
+  const bubble=msgWrap.querySelector('.msg-bubble');
+  if(bubble) bubble.textContent=newText;
+  if(!msgWrap.querySelector('.edited-label')){
+    const lbl=document.createElement('span');
+    lbl.className='edited-label';
+    lbl.style.cssText='font-size:9px;color:rgba(255,255,255,0.4);margin-left:6px;font-style:italic;';
+    lbl.textContent='edited';
+    const meta=msgWrap.querySelector('.msg-meta');
+    if(meta) meta.insertBefore(lbl, meta.firstChild);
+  }
+}
 document.addEventListener('click',e=>{
   const ctx=document.getElementById('msgContext');
   if(ctx.classList.contains('show')&&!e.target.closest('.msg-context')){
