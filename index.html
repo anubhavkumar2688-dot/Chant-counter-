@@ -1287,20 +1287,21 @@ window.skipOnband=window.skipOnboard=function(){
   }
 };
 
-// Buttons attach - fix for mobile tap issues
+// Buttons attach - simple reliable mobile tap
 function addTapListener(el, fn) {
   if(!el) return;
-  let touched = false;
-  el.addEventListener('touchend', function(e) {
+  el.style.cursor = 'pointer';
+  el.style.webkitTapHighlightColor = 'transparent';
+  el.style.userSelect = 'none';
+  el.ontouchstart = function(e) {
+    el.style.opacity = '0.8';
+  };
+  el.ontouchend = function(e) {
     e.preventDefault();
-    touched = true;
+    el.style.opacity = '1';
     fn();
-    setTimeout(()=>{ touched=false; }, 300);
-  }, { passive: false });
-  el.addEventListener('click', function(e) {
-    if(touched) return;
-    fn();
-  });
+  };
+  el.onclick = fn;
 }
 
 addTapListener(document.getElementById('obNextBtn'), window.obNext);
