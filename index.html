@@ -887,13 +887,16 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 <div class="screen" id="chatsListScreen">
   <div class="chats-header">
     <div class="chats-title">Chats</div>
-    <button class="new-chat-btn" onclick="showScreen('peopleScreen')">+ New Chat</button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="new-chat-btn" onclick="refreshChatList()" style="background:var(--chat-surface);border:1px solid var(--chat-border);color:var(--chat-muted);" title="Refresh">🔄</button>
+      <button class="new-chat-btn" onclick="showScreen('peopleScreen')">+ New Chat</button>
+    </div>
   </div>
   <div class="chat-list-body" id="chatListBody">
     <div class="empty-chats">
       <div style="font-size:40px;">💬</div>
       <div>No chats yet</div>
-      <div style="font-size:12px;">People section mein jaake follow karo</div>
+      <div style="font-size:12px;">Go to People and follow someone to start chatting</div>
     </div>
   </div>
 </div>
@@ -932,8 +935,8 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 <div class="screen" id="peopleScreen">
   <div class="people-header">
     <div class="people-title">People</div>
-    <div style="font-size:11px;color:var(--chat-muted);margin:4px 0 6px;">Apna ID Settings mein dekho → Dost ko bhejo → Woh yahan search karke follow karega</div>
-    <input class="search-bar" id="searchBar" placeholder="🔍 Dost ka 6-letter ID daalo (e.g. AB12XY)..." 
+    <div style="font-size:11px;color:var(--chat-muted);margin:4px 0 6px;">Find your ID in Settings → Share with friends → They search and follow you here</div>
+    <input class="search-bar" id="searchBar" placeholder="🔍 Enter friend's 6-letter ID (e.g. AB12XY)..." 
       oninput="searchUser(this.value)" autocomplete="off" autocorrect="off" spellcheck="false"
       style="text-transform:uppercase" maxlength="6">
   </div>
@@ -954,9 +957,9 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
     <!-- ID Card - TOP -->
     <div style="background:linear-gradient(135deg,#1c1000,#2d1800,#1c1000);border:1.5px solid rgba(255,107,0,0.5);border-radius:20px;padding:20px;margin-bottom:14px;text-align:center;box-shadow:0 6px 24px rgba(255,107,0,0.15);position:relative;overflow:hidden;" onclick="copyMyId()">
       <div style="position:absolute;right:-10px;bottom:-15px;font-size:80px;opacity:0.06;font-family:serif;pointer-events:none;">ॐ</div>
-      <div style="font-size:10px;color:rgba(255,107,0,0.7);letter-spacing:3px;margin-bottom:8px;font-weight:600;">MERA ID — SHARE KARO</div>
+      <div style="font-size:10px;color:rgba(255,107,0,0.7);letter-spacing:3px;margin-bottom:8px;font-weight:600;">MY ID — SHARE WITH FRIENDS</div>
       <div id="myIdDisplay" style="font-size:36px;font-weight:700;color:var(--chat-accent);letter-spacing:8px;text-shadow:0 0 20px rgba(255,107,0,0.3);">-</div>
-      <div style="font-size:10px;color:rgba(255,107,0,0.5);margin-top:8px;display:flex;align-items:center;justify-content:center;gap:4px;">📋 Tap karo copy ho jaega</div>
+      <div style="font-size:10px;color:rgba(255,107,0,0.5);margin-top:8px;display:flex;align-items:center;justify-content:center;gap:4px;">📋 Tap to copy</div>
     </div>
 
     <!-- Profile card -->
@@ -971,11 +974,11 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 
     <!-- Search User by ID -->
     <div class="settings-section">
-      <div class="settings-section-title">🔍 ID se User Dhundo</div>
+      <div class="settings-section-title">🔍 Find User by ID</div>
       <div style="background:var(--chat-surface);border:1px solid var(--chat-border);border-radius:16px;padding:16px;">
         <input id="settingsSearchBar" 
           style="width:100%;background:var(--chat-bg);border:1px solid var(--chat-border);border-radius:12px;padding:12px 16px;color:var(--chat-text);font-family:'Poppins',sans-serif;font-size:14px;outline:none;text-transform:uppercase;letter-spacing:3px;transition:border-color 0.2s;"
-          placeholder="6-letter ID daalo (e.g. AB12XY)"
+          placeholder="Enter 6-letter ID (e.g. AB12XY)"
           maxlength="6" autocomplete="off" autocorrect="off" spellcheck="false"
           oninput="searchUserFromSettings(this.value)"
           onfocus="this.style.borderColor='var(--chat-accent)'" onblur="this.style.borderColor='var(--chat-border)'">
@@ -996,7 +999,7 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
       <div class="settings-row" onclick="logoutUser()" style="margin-top:8px;">
         <div class="settings-row-left">
           <div class="settings-row-icon">🚪</div>
-          <div><div class="settings-row-text" style="color:#f44336;">Logout</div><div class="settings-row-sub">Google account se logout ho jao</div></div>
+          <div><div class="settings-row-text" style="color:#f44336;">Logout</div><div class="settings-row-sub">Sign out of your Google account</div></div>
         </div>
         <div style="color:#f44336;font-size:12px;">›</div>
       </div>
@@ -1010,7 +1013,7 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
       <div class="settings-row" onclick="clearAllChats()">
         <div class="settings-row-left">
           <div class="settings-row-icon">🗑️</div>
-          <div><div class="settings-row-text">Saari Chats Clear</div></div>
+          <div><div class="settings-row-text">Clear All Chats</div></div>
         </div>
         <div style="color:var(--danger);font-size:12px;">Clear</div>
       </div>
@@ -1055,27 +1058,27 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
       <div style="background:var(--chat-surface);border:1px solid var(--chat-border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:0;">
         <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--chat-border);">
           <div style="width:38px;height:38px;border-radius:12px;background:rgba(255,107,0,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🕉️</div>
-          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Mantra Counter</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">OM button tap karo — mantra count hoga. Mala complete pe celebration!</div></div>
+          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Mantra Counter</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">Tap the OM button to count your mantras. Celebrate when a full mala is complete!</div></div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--chat-border);">
           <div style="width:38px;height:38px;border-radius:12px;background:rgba(255,107,0,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📿</div>
-          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Custom Mantra</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">Mantra pill pe tap karo — 10 mantras pehle se hain, apna bhi add kar sakte ho.</div></div>
+          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Custom Mantra</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">Tap the mantra pill to choose — 10 mantras are pre-loaded, or add your own.</div></div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--chat-border);">
           <div style="width:38px;height:38px;border-radius:12px;background:rgba(255,107,0,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">💬</div>
-          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Secret Chat</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">Counter screen pe top-right corner 3 baar tap karo ya OM button hold karo — password daalo, chat section khulega.</div></div>
+          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Secret Chat</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">Tap the top-right corner 3 times on the counter screen, or hold the OM button — enter password to open chat.</div></div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--chat-border);">
           <div style="width:38px;height:38px;border-radius:12px;background:rgba(255,107,0,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">📎</div>
-          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Photo & File Share</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">Chat mein 📎 se photo, video, ya file bhej sakte ho. Max 5MB image, 25MB video.</div></div>
+          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Photo & File Share</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">Use the 📎 button in chat to send photos, videos, or files. Max 5MB image, 25MB video.</div></div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--chat-border);">
           <div style="width:38px;height:38px;border-radius:12px;background:rgba(255,107,0,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">↩</div>
-          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Reply & Long Press</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">Message swipe karo reply ke liye. Hold karo copy/reply ke liye.</div></div>
+          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Reply & Edit</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">Swipe a message to reply. Long press to copy, reply, or edit your own messages.</div></div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;">
           <div style="width:38px;height:38px;border-radius:12px;background:rgba(255,107,0,0.12);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔐</div>
-          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Password Lock</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">4-digit password — chat section sirf tumhara. Koi dekh nahi sakta.</div></div>
+          <div><div style="font-size:13px;font-weight:600;color:var(--chat-text);">Password Lock</div><div style="font-size:11px;color:var(--chat-muted);margin-top:3px;line-height:1.5;">4-digit password keeps the chat section private. Only you can access it.</div></div>
         </div>
       </div>
     </div>
@@ -1094,7 +1097,7 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
         <div style="font-size:13px;color:var(--chat-accent);font-weight:600;margin-top:3px;letter-spacing:0.5px;">@ Eren</div>
         <div style="margin-top:20px;font-size:11px;color:rgba(255,107,0,0.45);line-height:2;letter-spacing:0.3px;">
           Made with ❤️ for daily spiritual practice.<br>
-          Har din ek mala — roze ka niyam.
+          One mala a day — a daily commitment.
         </div>
       </div>
     </div>
@@ -1141,6 +1144,7 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 <div class="msg-context" id="msgContext">
   <div class="ctx-item" onclick="ctxReply()"><span class="ctx-icon">↩</span> Reply</div>
   <div class="ctx-item" onclick="ctxCopy()"><span class="ctx-icon">📋</span> Copy</div>
+  <div class="ctx-item" onclick="ctxEdit()" id="ctxEditItem" style="display:none"><span class="ctx-icon">✏️</span> Edit</div>
   <div class="ctx-item" onclick="ctxDownload()" id="ctxDlItem" style="display:none"><span class="ctx-icon">⬇</span> Save</div>
   <div class="ctx-item" onclick="document.getElementById('msgContext').classList.remove('show')"><span class="ctx-icon">✕</span> Close</div>
 </div>
@@ -1940,13 +1944,13 @@ window.showChatLongPressMenu = function(uid, name) {
     <div class="lp-popup">
       <div class="lp-name">${escH(name)}</div>
       <button class="lp-btn" onclick="openChat('${uid}','${escH(name)}');document.getElementById('lpPopup').remove();">
-        💬 Chat kholо
+        💬 Open Chat
       </button>
       <button class="lp-btn warn" onclick="document.getElementById('lpPopup').remove();blockUser('${uid}','${escH(name)}')" style="color:#ffaa00;">
         🚫 Block
       </button>
       <button class="lp-btn danger" onclick="document.getElementById('lpPopup').remove();window.deleteSingleChat('${uid}')">
-        🗑️ Chat delete karo
+        🗑️ Delete Chat
       </button>
     </div>`;
 
@@ -1961,7 +1965,7 @@ window.showChatLongPressMenu = function(uid, name) {
 window.deleteSingleChat = function(uid) {
   const chats = JSON.parse(localStorage.getItem('dc_chats')||'{}');
   const name = chats[uid]?.name || uid;
-  if(!confirm(name+' ki chat delete karna chahte ho?')) return;
+  if(!confirm('Delete chat with '+name+'?')) return;
   delete chats[uid];
   localStorage.setItem('dc_chats', JSON.stringify(chats));
   // Cache clear karo
@@ -1976,7 +1980,7 @@ window.deleteSingleChat = function(uid) {
     _onlineListeners.delete(uid);
   }
   renderChatList();
-  toast(name+' ki chat delete ho gaya ✓');
+  toast(name+' chat deleted ✓');
 };
 
 // ===== CHAT LIST =====
@@ -1990,7 +1994,7 @@ function renderChatList() {
   const chats=JSON.parse(localStorage.getItem('dc_chats')||'{}');
   const keys=Object.keys(chats);
   if(keys.length===0) {
-    body.innerHTML='<div class="empty-chats"><div style="font-size:40px">💬</div><div>Abhi koi chat nahi</div><div style="font-size:12px">People mein jaake kisi ka ID search karo aur chat karo</div></div>';
+    body.innerHTML='<div class="empty-chats"><div style="font-size:40px">💬</div><div>No chats yet</div><div style="font-size:12px">Go to People, search a friend\'s ID and start chatting</div></div>';
     document.getElementById('bnBadge').style.display='none';
     return;
   }
@@ -2062,11 +2066,11 @@ function renderChatList() {
 window.openChat=async function(uid,name) {
   // Block check — agar blocked hai toh chat nahi kholenge
   if(isBlocked(uid)){
-    toast('Tum ne is user ko block kiya hua hai 🚫'); return;
+    toast('You have blocked this user 🚫'); return;
   }
   const theyBlockedMe = await get(ref(db,`blocked/${uid}/${myId}`)).then(s=>s.val()).catch(()=>false);
   if(theyBlockedMe){
-    toast('Is user ne tumhe block kar diya hai 🚫'); return;
+    toast('This user has blocked you 🚫'); return;
   }
   currentChatId=uid; currentChatName=name;
   document.getElementById('chatPartnerName').textContent=name;
@@ -2120,15 +2124,17 @@ window.openChat=async function(uid,name) {
 window.refreshChat=function(){
   if(!currentChatId) return;
   const roomId=chatRoomId(myId,currentChatId);
-  // Cache aur shown keys clear karo
   localStorage.removeItem('dc_msgcache_'+roomId);
   _globalShownKeys.delete(roomId);
-  // Messages area clear karo
   const msgsArea=document.getElementById('msgsArea');
   msgsArea.innerHTML='<div class="sys-msg">🔒 Private • Encrypted</div>';
-  // Reload
   listenChat(currentChatId);
   toast('Chat refreshed ✓');
+};
+
+window.refreshChatList=function(){
+  renderChatList();
+  toast('Refreshed ✓');
 };
 
 window.closeChatScreen=function(){
@@ -2213,7 +2219,7 @@ window.renderNotifications = function() {
   updateNotifBadge();
 
   if(notifs.length === 0) {
-    body.innerHTML=`<div class="notif-empty"><div style="font-size:44px;">🔔</div><div>No notifications yet</div><div style="font-size:12px;margin-top:4px;">Follow requests aur responses yahan dikhenge</div></div>`;
+    body.innerHTML=`<div class="notif-empty"><div style="font-size:44px;">🔔</div><div>No notifications yet</div><div style="font-size:12px;margin-top:4px;">Follow requests and responses will appear here</div></div>`;
     return;
   }
   body.innerHTML='';
@@ -2228,18 +2234,18 @@ window.renderNotifications = function() {
       inner = `
         <div class="notif-av">${avLetter}</div>
         <div class="notif-content">
-          <div class="notif-text"><strong>${escH(n.name)}</strong> ne tumhe follow request bheja hai</div>
+          <div class="notif-text"><strong>${escH(n.name)}</strong> sent you a follow request</div>
           <div class="notif-time">${timeAgo}</div>
           ${n.status==='pending' ? `<div class="notif-actions">
             <button class="notif-accept-btn" onclick="acceptFollowRequest('${n.from}','${escH(n.name)}','${n.id}')">✅ Accept</button>
             <button class="notif-reject-btn" onclick="rejectFollowRequest('${n.from}','${escH(n.name)}','${n.id}')">❌ Reject</button>
-          </div>` : `<div style="font-size:12px;margin-top:6px;color:${n.status==='accepted'?'#4CAF50':'var(--chat-muted)'};">${n.status==='accepted'?'✅ Accept kiya':'❌ Reject kiya'}</div>`}
+          </div>` : `<div style="font-size:12px;margin-top:6px;color:${n.status==='accepted'?'#4CAF50':'var(--chat-muted)'};">${n.status==='accepted'?'✅ Accepted':'❌ Rejected'}</div>`}
         </div>`;
     } else if(n.type === 'request_accepted') {
       inner = `
         <div class="notif-av">${avLetter}</div>
         <div class="notif-content">
-          <div class="notif-text"><strong>${escH(n.name)}</strong> ne teri follow request accept kar li! 🎉</div>
+          <div class="notif-text"><strong>${escH(n.name)}</strong> accepted your follow request! 🎉</div>
           <div class="notif-time">${timeAgo}</div>
           <div style="margin-top:8px;"><button onclick="openChat('${n.from}','${escH(n.name)}')" style="background:linear-gradient(135deg,var(--chat-accent),#ff8c00);color:#fff;border:none;border-radius:12px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">💬 Chat Kholo</button></div>
         </div>`;
@@ -2247,21 +2253,21 @@ window.renderNotifications = function() {
       inner = `
         <div class="notif-av">${avLetter}</div>
         <div class="notif-content">
-          <div class="notif-text"><strong>${escH(n.name)}</strong> ne teri follow request reject kar di</div>
+          <div class="notif-text"><strong>${escH(n.name)}</strong> rejected your follow request</div>
           <div class="notif-time">${timeAgo}</div>
         </div>`;
     } else if(n.type === 'blocked') {
       inner = `
         <div class="notif-av sys">🚫</div>
         <div class="notif-content">
-          <div class="notif-text"><strong>${escH(n.name)}</strong> ne tujhe block kar diya</div>
+          <div class="notif-text"><strong>${escH(n.name)}</strong> has blocked you</div>
           <div class="notif-time">${timeAgo}</div>
         </div>`;
     } else if(n.type === 'unblocked') {
       inner = `
         <div class="notif-av sys">✅</div>
         <div class="notif-content">
-          <div class="notif-text"><strong>${escH(n.name)}</strong> ne tujhe unblock kar diya</div>
+          <div class="notif-text"><strong>${escH(n.name)}</strong> has unblocked you</div>
           <div class="notif-time">${timeAgo}</div>
         </div>`;
     }
@@ -2274,21 +2280,21 @@ function _timeAgo(ts) {
   if(!ts) return '';
   const diff = Date.now() - ts;
   const m = Math.floor(diff/60000);
-  if(m < 1) return 'Abhi abhi';
-  if(m < 60) return m + ' min pehle';
+  if(m < 1) return 'Just now';
+  if(m < 60) return m + ' min ago';
   const h = Math.floor(m/60);
-  if(h < 24) return h + ' ghante pehle';
-  return Math.floor(h/24) + ' din pehle';
+  if(h < 24) return h + ' hr ago';
+  return Math.floor(h/24) + ' days ago';
 }
 
 // ===== SEND FOLLOW REQUEST =====
 window.sendFollowRequest = async function(uid, name) {
   if(!myId) return;
-  if(isBlocked(uid)) { toast('Tujhe block kiya hua hai'); return; }
+  if(isBlocked(uid)) { toast('You have blocked this user'); return; }
 
   // Check if B has blocked A
   const blockedSnap = await get(ref(db, `blocked/${uid}/${myId}`));
-  if(blockedSnap.val()) { toast('Request nahi bhej sakte'); return; }
+  if(blockedSnap.val()) { toast('Cannot send request'); return; }
 
   // Save request in Firebase: followRequests/{toUid}/{fromUid}
   await set(ref(db, `followRequests/${uid}/${myId}`), {
@@ -2300,7 +2306,7 @@ window.sendFollowRequest = async function(uid, name) {
     status: 'pending', ts: Date.now(), read: false
   });
   setRequestStatus(uid, 'sent');
-  toast('Follow request bhej diya ✓');
+  toast('Follow request sent ✓');
   renderPeople();
   renderSearchResults_fromCache(uid, name);
 };
@@ -2323,7 +2329,7 @@ window.acceptFollowRequest = async function(fromUid, fromName, notifId) {
   const notifs = getNotifications();
   const idx = notifs.findIndex(n=>n.id===notifId||n.firebaseKey===notifId);
   if(idx>=0) { notifs[idx].status='accepted'; saveNotifications(notifs); }
-  toast(fromName + ' ka follow accept kar liya ✅');
+  toast(fromName + ' accepted ✅');
   renderNotifications();
   renderPeople();
   renderChatList();
@@ -2341,14 +2347,14 @@ window.rejectFollowRequest = async function(fromUid, fromName, notifId) {
   const notifs = getNotifications();
   const idx = notifs.findIndex(n=>n.id===notifId);
   if(idx>=0) { notifs[idx].status='rejected'; saveNotifications(notifs); }
-  toast(fromName + ' ki request reject kar di ❌');
+  toast(fromName + ' request rejected ❌');
   renderNotifications();
 };
 
 // ===== BLOCK USER =====
 window.blockUser = async function(uid, name) {
   if(!myId) return;
-  if(!confirm(name + ' ko block karna chahte ho?')) return;
+  if(!confirm('Block ' + name + '?')) return;
   // Firebase mein block set karo
   await set(ref(db, `blocked/${myId}/${uid}`), true);
   setBlockedLocal(uid, true);
@@ -2438,7 +2444,7 @@ window.refreshNotifications = async function() {
     }
     updateNotifBadge();
     renderNotifications();
-    toast('Notifications refresh ho gayi ✓');
+    toast('Notifications refreshed ✓');
   } catch(e) {
     toast('Refresh failed, try again');
   } finally {
@@ -2457,11 +2463,11 @@ window.searchUser=function(val) {
   val=val.trim().toUpperCase();
   const res=document.getElementById('searchResults');
   if(!val||val.length<1) { res.innerHTML=''; _lastSearchUid=null; return; }
-  if(val.length<6) { res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">6 letters ka ID daalo...</div>'; _lastSearchUid=null; return; }
-  if(val===myId) { res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">Ye tera apna ID hai! 😄</div>'; return; }
+  if(val.length<6) { res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">Enter a 6-letter ID...</div>'; _lastSearchUid=null; return; }
+  if(val===myId) { res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">That\'s your own ID! 😄</div>'; return; }
 
   clearTimeout(_searchUserTimer);
-  res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">🔍 Dhundh raha hai...</div>';
+  res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">🔍 Searching...</div>';
   _searchUserTimer = setTimeout(async ()=>{
     try {
       const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000));
@@ -2471,14 +2477,14 @@ window.searchUser=function(val) {
         _lastSearchUid = val; _lastSearchName = u.name||val;
         searchUser_render(val, u.name||val, u.online);
       } else {
-        res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">❌ User nahi mila — ID sahi se check karo</div>';
+        res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">❌ User not found — check the ID</div>';
         _lastSearchUid=null;
       }
     } catch(e) {
       if(e.message==='timeout') {
-        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:8px;">⚠️ Network slow hai — dobara try karo</div>';
+        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:8px;">⚠️ Network is slow — please try again</div>';
       } else {
-        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:8px;">⚠️ Error aaya — dobara try karo</div>';
+        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:8px;">⚠️ Something went wrong — try again</div>';
       }
       _lastSearchUid=null;
     }
@@ -2543,10 +2549,10 @@ window.showUserOptions = function(uid, name) {
 };
 
 window.unfollowUser = function(uid, name) {
-  if(!confirm(name + ' ko unfollow karna chahte ho?')) return;
+  if(!confirm('Unfollow ' + name + '?')) return;
   delete following[uid];
   localStorage.setItem('dc_following',JSON.stringify(following));
-  toast(name + ' ko unfollow kar diya');
+  toast(name + ' unfollowed');
   renderPeople();
   renderChatList();
 };
@@ -2635,28 +2641,51 @@ window.sendMsg=async function(){
   const inp=document.getElementById('msgInp');
   const text=inp.value.trim();
   if(!text||!currentChatId) return;
-  // Block check — agar dono mein se kisi ne bhi block kiya hai toh message nahi jaayega
+
+  // EDIT MODE
+  if(window._editingMsgId) {
+    const msgId=window._editingMsgId;
+    window._editingMsgId=null;
+    cancelReply();
+    const roomId=chatRoomId(myId,currentChatId);
+    set(ref(db,`chats/${roomId}/messages/${msgId}/text`), text).catch(()=>{});
+    set(ref(db,`chats/${roomId}/messages/${msgId}/edited`), true).catch(()=>{});
+    const msgWrap=document.querySelector(`.msg-wrap[data-msgid="${msgId}"]`);
+    if(msgWrap){
+      const bubble=msgWrap.querySelector('.msg-bubble');
+      if(bubble) bubble.textContent=text;
+      if(!msgWrap.querySelector('.edited-label')){
+        const lbl=document.createElement('span');
+        lbl.className='edited-label';
+        lbl.style.cssText='font-size:9px;color:rgba(255,255,255,0.5);margin-left:4px;';
+        lbl.textContent='edited';
+        const meta=msgWrap.querySelector('.msg-meta');
+        if(meta) meta.appendChild(lbl);
+      }
+    }
+    inp.value=''; inp.style.height='auto';
+    toast('Message edited ✓');
+    return;
+  }
+
   if(isBlocked(currentChatId)){
-    toast('Tum ne is user ko block kiya hua hai 🚫'); return;
+    toast('You have blocked this user 🚫'); return;
   }
   const theyBlockedMe = await get(ref(db,`blocked/${currentChatId}/${myId}`)).then(s=>s.val()).catch(()=>false);
   if(theyBlockedMe){
-    toast('Is user ne tumhe block kar diya hai 🚫'); return;
+    toast('This user has blocked you 🚫'); return;
   }
   const t=getTime();
-  inp.value=''; 
+  inp.value='';
   inp.style.height='auto';
-  inp.focus(); // Keyboard band na ho — focus rakho
-  // Reset send button to send arrow
+  inp.focus();
   const btn=document.getElementById('sendBtn');
-  if(btn) btn.textContent='➤';
+  if(btn){ btn.textContent='➤'; btn.style.background=''; }
   const capturedReply=replyTo;
   if(replyTo) cancelReply();
-  // Firebase mein save karo — listener khud message screen pe dikhayega
   const msgData={type:'chat',text,from:myId,name:myName,time:t};
   if(capturedReply) msgData.replyTo={text:capturedReply.text,msgId:capturedReply.msgId};
   await sendChatMessage(currentChatId, msgData);
-  // Chat list localStorage update karo
   updateChatListLocal(currentChatId, currentChatName, text, t);
   renderChatList();
 };
@@ -2687,8 +2716,8 @@ function addMsg(text,from,name,time,msgId,replyData) {
   const onLpStart=(e)=>{
     lpY=e.touches?e.touches[0].clientY:e.clientY;
     lpTimer=setTimeout(()=>{
-      _ctxMsg={text,id:msgId,src:null};
-      showCtxMenu({text,id:msgId}, lpY, me);
+      _ctxMsg={text,id:msgId,src:null,isMe:me};
+      showCtxMenu({text,id:msgId,isMe:me}, lpY, me);
     },500);
   };
   const onLpEnd=()=>clearTimeout(lpTimer);
@@ -2875,7 +2904,6 @@ window.showReplyBar=function(text){
   document.getElementById('replyBarText').textContent='↩ '+text.substring(0,50);
   bar.style.display='flex';
 };
-window.cancelReply=function(){ replyTo=null; document.getElementById('replyBar').style.display='none'; };
 
 // ===== FILE SEND — Sirf Images =====
 window.sendFile=async function(inp){
@@ -2969,8 +2997,8 @@ window.searchUserFromSettings=function(val){
   val=val.trim().toUpperCase();
   const res=document.getElementById('settingsSearchResults');
   if(!val||val.length<1){ res.innerHTML=''; return; }
-  if(val.length<6){ res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">6 letters ka ID daalo (e.g. AB12XY)...</div>'; return; }
-  if(val===myId){ res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">Ye tera apna ID hai! 😄</div>'; return; }
+  if(val.length<6){ res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">Enter a 6-letter ID (e.g. AB12XY)...</div>'; return; }
+  if(val===myId){ res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">That is your own ID! 😄</div>'; return; }
 
   // Debounce — 400ms baad search karo
   clearTimeout(_settingsSearchTimer);
@@ -3008,13 +3036,13 @@ window.searchUserFromSettings=function(val){
             ${actionBtn}
           </div>`;
       } else {
-        res.innerHTML=`<div style="color:var(--chat-muted);font-size:12px;padding:4px;">❌ User nahi mila — ID sahi se check karo</div>`;
+        res.innerHTML=`<div style="color:var(--chat-muted);font-size:12px;padding:4px;">❌ User not found — check the ID</div>`;
       }
     } catch(e) {
       if(e.message==='timeout') {
-        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:4px;">⚠️ Network slow hai — dobara try karo</div>';
+        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:4px;">⚠️ Network is slow — please try again</div>';
       } else {
-        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:4px;">⚠️ Error aaya — dobara try karo</div>';
+        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:4px;">⚠️ Something went wrong — try again</div>';
       }
     }
   }, 400);
@@ -3182,9 +3210,11 @@ function showCtxMenu(data, touchY, isRight){
   _ctxLastY=touchY;
   const ctx=document.getElementById('msgContext');
   const dlItem=document.getElementById('ctxDlItem');
+  const editItem=document.getElementById('ctxEditItem');
   if(dlItem) dlItem.style.display=data.src?'flex':'none';
-  // Position
-  const menuH=150;
+  // Show Edit only for own text messages
+  if(editItem) editItem.style.display=(data.isMe && data.text && !data.src)?'flex':'none';
+  const menuH=180;
   let top=touchY-menuH-10;
   if(top<10) top=touchY+10;
   ctx.style.top=top+'px';
@@ -3199,6 +3229,35 @@ window.ctxReply=function(){
 window.ctxCopy=function(){
   if(_ctxMsg&&_ctxMsg.text){navigator.clipboard.writeText(_ctxMsg.text).then(()=>toast('Copied ✓')).catch(()=>toast('Could not copy'));}
   document.getElementById('msgContext').classList.remove('show');
+};
+
+window.ctxEdit=function(){
+  if(!_ctxMsg||!_ctxMsg.text||!_ctxMsg.id) return;
+  document.getElementById('msgContext').classList.remove('show');
+  const inp=document.getElementById('msgInp');
+  inp.value=_ctxMsg.text;
+  inp.focus();
+  inp.style.height='auto';
+  inp.style.height=Math.min(inp.scrollHeight,100)+'px';
+  // Show edit bar
+  const bar=document.getElementById('replyBar');
+  document.getElementById('replyBarText').textContent='✏️ Editing message...';
+  bar.style.display='flex';
+  bar.style.borderLeftColor='#4fc3f7';
+  // Store editing state
+  window._editingMsgId=_ctxMsg.id;
+  // Change send button to checkmark
+  const btn=document.getElementById('sendBtn');
+  if(btn){ btn.textContent='✓'; btn.style.background='#4fc3f7'; }
+};
+
+window.cancelReply=function(){
+  replyTo=null;
+  window._editingMsgId=null;
+  document.getElementById('replyBar').style.display='none';
+  document.getElementById('replyBar').style.borderLeftColor='var(--chat-accent)';
+  const btn=document.getElementById('sendBtn');
+  if(btn){ btn.textContent='➤'; btn.style.background=''; }
 };
 window.ctxDownload=function(){
   if(_ctxMsg&&_ctxMsg.src){downloadImg(_ctxMsg.src,'media.jpg');}
