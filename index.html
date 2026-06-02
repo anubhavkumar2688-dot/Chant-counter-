@@ -1269,13 +1269,17 @@ window.obNext=function(){
   document.getElementById('obNextBtn').textContent=obStep===obSlides.length-1?'Shuru Karo →':'Aage →';
   for(let i=0;i<3;i++){document.getElementById('od'+i).classList.toggle('active',i===obStep);}
 };
-window.skipOnband=window.skipOnboard=function(){
+window.skipOnboard=window.skipOnband=function(){
   localStorage.setItem('dc_onboard_done','1');
-  if(auth.currentUser) {
-    // Already logged in — direct handle
-    _authHandled = false;
-    handleAuthUser(auth.currentUser);
-  } else {
+  try {
+    if(auth && auth.currentUser) {
+      // Already logged in — direct handle
+      _authHandled = false;
+      handleAuthUser(auth.currentUser);
+    } else {
+      showScreen('googleLogin');
+    }
+  } catch(e) {
     showScreen('googleLogin');
   }
 };
