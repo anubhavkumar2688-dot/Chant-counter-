@@ -760,8 +760,8 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
       <div class="ob-dot" id="od1"></div>
       <div class="ob-dot" id="od2"></div>
     </div>
-    <button class="ob-btn" id="obNextBtn">Aage →</button>
-    <div class="ob-skip" id="obSkipBtn">Skip karo</div>
+    <button class="ob-btn" id="obNextBtn" onclick="obNext()">Aage →</button>
+    <div class="ob-skip" id="obSkipBtn" onclick="skipOnboard()">Skip karo</div>
   </div>
 </div>
 
@@ -780,7 +780,7 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
       <button id="googleLoginBtn" onclick="signInWithGoogle()"
         style="width:100%;padding:17px;border-radius:22px;border:2px solid rgba(200,150,10,0.3);background:linear-gradient(145deg,#ffffff,#fdf9f2);color:var(--brown2);font-size:16px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;box-shadow:0 6px 24px rgba(0,0,0,0.08);letter-spacing:0.3px;display:flex;align-items:center;justify-content:center;gap:12px;transition:all 0.2s;">
         <svg width="22" height="22" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>
-        Google se Login Karo
+        Sign in with Google
       </button>
     </div>
 
@@ -892,7 +892,7 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
   <div class="chat-list-body" id="chatListBody">
     <div class="empty-chats">
       <div style="font-size:40px;">💬</div>
-      <div>Abhi koi chat nahi hai</div>
+      <div>No chats yet</div>
       <div style="font-size:12px;">People section mein jaake follow karo</div>
     </div>
   </div>
@@ -1178,7 +1178,7 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
   <div class="notif-body" id="notifBody">
     <div class="notif-empty">
       <div style="font-size:40px;">🔔</div>
-      <div>Abhi koi notification nahi</div>
+      <div>No notifications yet</div>
     </div>
   </div>
 </div>
@@ -1277,23 +1277,7 @@ window.skipOnband=window.skipOnboard=function(){
 };
 
 // Buttons attach - fix for mobile tap issues
-function addTapListener(el, fn) {
-  if(!el) return;
-  let touched = false;
-  el.addEventListener('touchend', function(e) {
-    e.preventDefault();
-    touched = true;
-    fn();
-    setTimeout(()=>{ touched=false; }, 300);
-  }, { passive: false });
-  el.addEventListener('click', function(e) {
-    if(touched) return;
-    fn();
-  });
-}
-
-addTapListener(document.getElementById('obNextBtn'), window.obNext);
-addTapListener(document.getElementById('obSkipBtn'), window.skipOnboard);
+// Buttons use onclick directly - no extra listener needed
 
 // ===== FIREBASE =====
 const app = initializeApp({
@@ -1314,7 +1298,7 @@ const googleProvider = new GoogleAuthProvider();
 
 window.signInWithGoogle = async function() {
   const btn = document.getElementById('googleLoginBtn');
-  if(btn){ btn.disabled=true; btn.textContent='Login ho raha hai...'; }
+  if(btn){ btn.disabled=true; btn.textContent='Signing in...'; }
   try {
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     if(isMobile) {
@@ -1325,15 +1309,15 @@ window.signInWithGoogle = async function() {
       await signInWithPopup(auth, googleProvider);
     }
   } catch(e) {
-    if(btn){ btn.disabled=false; btn.innerHTML='<svg width="22" height="22" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg> Google se Login Karo'; }
+    if(btn){ btn.disabled=false; btn.innerHTML='<svg width="22" height="22" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg> Sign in with Google'; }
     const el = document.getElementById('googleLoginStatus');
-    if(el) el.textContent = 'Login nahi hua: ' + (e.message||'dobara try karo');
+    if(el) el.textContent = 'Login failed: ' + (e.message||'try again');
   }
 };
 
 // ===== LOGOUT =====
 window.logoutUser = async function() {
-  if(!confirm('Logout karna chahte ho?')) return;
+  if(!confirm('Are you sure you want to logout?')) return;
   try {
     if(myId) {
       await set(ref(db,`users/${myId}/online`), false).catch(()=>{});
@@ -1369,9 +1353,9 @@ window.logoutUser = async function() {
     // onAuthStateChanged will fire with null user — show googleLogin
     // but we show it immediately too for fast UX
     showScreen('googleLogin');
-    toast('Logout ho gaya ✓');
+    toast('Logged out ✓');
   } catch(e) {
-    toast('Logout nahi hua, dobara try karo');
+    toast('Logout failed, try again');
   }
 };
 
@@ -1454,7 +1438,7 @@ async function checkCpPin() {
       const hashed = await hashPin(cpPin);
       userPassword=hashed;
       localStorage.setItem('dc_pass', hashed);
-      toast('Password set ho gaya! ✓');
+      toast('Password set! ✓');
       cpPin=''; updateCpDots();
       showScreen('profileSetup');
     } else {
@@ -1494,7 +1478,7 @@ async function checkCpPin() {
     if(cpPin===cpFirst) {
       const hashed = await hashPin(cpPin);
       userPassword=hashed; localStorage.setItem('dc_pass', hashed);
-      toast('Password change ho gaya! ✓');
+      toast('Password changed! ✓');
       cpPin=''; cpMode='verify';
       showScreen('counter');
     } else {
@@ -1521,7 +1505,7 @@ window.setAvatar = function(inp) {
 
 window.saveProfile = function() {
   const name=document.getElementById('psName').value.trim();
-  if(!name){ toast('Naam daalo!'); return; }
+  if(!name){ toast('Please enter a name!'); return; }
   myName=name;
   localStorage.setItem('dc_name',myName);
   localStorage.setItem('dc_setup_done','1');
@@ -1631,7 +1615,7 @@ window.toggleSound=function(){
 };
 
 window.restartMala=function(){
-  if(confirm('Mala restart karna chahte ho?')){ count=0; localStorage.setItem('dc_count','0'); updateCountUI(); }
+  if(confirm('Restart mala?')){ count=0; localStorage.setItem('dc_count','0'); updateCountUI(); }
 };
 
 // ===== SECRET ACCESS =====
@@ -1959,7 +1943,7 @@ window.showChatLongPressMenu = function(uid, name) {
         💬 Chat kholо
       </button>
       <button class="lp-btn warn" onclick="document.getElementById('lpPopup').remove();blockUser('${uid}','${escH(name)}')" style="color:#ffaa00;">
-        🚫 Block Karo
+        🚫 Block
       </button>
       <button class="lp-btn danger" onclick="document.getElementById('lpPopup').remove();window.deleteSingleChat('${uid}')">
         🗑️ Chat delete karo
@@ -2107,7 +2091,24 @@ window.openChat=async function(uid,name) {
   // Firebase se messages load karo (real-time)
   listenChat(uid);
 
-  // Online status — aur jab bhi status change ho update karo
+  // Partner ka naam Firebase se sync karo (real-time)
+  onValue(ref(db,`users/${uid}/name`),s=>{
+    if(s.val()) {
+      const fbName = s.val();
+      currentChatName = fbName;
+      const nameEl = document.getElementById('chatPartnerName');
+      const avEl = document.getElementById('chatAvatar');
+      if(nameEl) nameEl.textContent = fbName;
+      if(avEl) avEl.textContent = (fbName[0]||'?').toUpperCase();
+      // following mein bhi update karo
+      if(following[uid]) {
+        following[uid].name = fbName;
+        localStorage.setItem('dc_following', JSON.stringify(following));
+      }
+    }
+  });
+
+  // Online status
   onValue(ref(db,`users/${uid}/online`),s=>{
     const stEl=document.getElementById('chatStatus');
     if(stEl){ stEl.textContent=s.val()?'Online':'Offline'; stEl.className='chat-hst'+(s.val()?' online':''); }
@@ -2127,7 +2128,7 @@ window.refreshChat=function(){
   msgsArea.innerHTML='<div class="sys-msg">🔒 Private • Encrypted</div>';
   // Reload
   listenChat(currentChatId);
-  toast('Chat refresh ho gaya ✓');
+  toast('Chat refreshed ✓');
 };
 
 window.closeChatScreen=function(){
@@ -2212,7 +2213,7 @@ window.renderNotifications = function() {
   updateNotifBadge();
 
   if(notifs.length === 0) {
-    body.innerHTML=`<div class="notif-empty"><div style="font-size:44px;">🔔</div><div>Abhi koi notification nahi</div><div style="font-size:12px;margin-top:4px;">Follow requests aur responses yahan dikhenge</div></div>`;
+    body.innerHTML=`<div class="notif-empty"><div style="font-size:44px;">🔔</div><div>No notifications yet</div><div style="font-size:12px;margin-top:4px;">Follow requests aur responses yahan dikhenge</div></div>`;
     return;
   }
   body.innerHTML='';
@@ -2439,7 +2440,7 @@ window.refreshNotifications = async function() {
     renderNotifications();
     toast('Notifications refresh ho gayi ✓');
   } catch(e) {
-    toast('Refresh nahi hua, dobara try karo');
+    toast('Refresh failed, try again');
   } finally {
     if(btn) { btn.textContent='🔄'; btn.disabled=false; }
   }
@@ -2533,9 +2534,8 @@ window.showUserOptions = function(uid, name) {
   overlay.className='block-overlay'; overlay.id='userOptPopup';
   overlay.innerHTML=`<div class="block-popup">
     <div class="block-popup-name">${escH(name)}</div>
-    <button class="block-popup-btn" onclick="openChat('${uid}','${escH(name)}');document.getElementById('userOptPopup').remove();">💬 Chat Kholo</button>
-    <button class="block-popup-btn warn" onclick="unfollowUser('${uid}','${escH(name)}');document.getElementById('userOptPopup').remove();">👋 Unfollow</button>
-    <button class="block-popup-btn danger" onclick="blockUser('${uid}','${escH(name)}');document.getElementById('userOptPopup').remove();">🚫 Block Karo</button>
+    <button class="block-popup-btn" onclick="openChat('${uid}','${escH(name)}');document.getElementById('userOptPopup').remove();">💬 Open Chat</button>
+    <button class="block-popup-btn danger" onclick="blockUser('${uid}','${escH(name)}');document.getElementById('userOptPopup').remove();">🚫 Block</button>
     <button class="block-popup-btn" onclick="document.getElementById('userOptPopup').remove();">✕ Cancel</button>
   </div>`;
   overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
@@ -2834,7 +2834,7 @@ function triggerDownload(url, filename){
   a.href=url; a.download=filename;
   document.body.appendChild(a); a.click();
   document.body.removeChild(a);
-  toast('Download shuru ho gaya ✓');
+  toast('Download started ✓');
 }
 
 function saveHistMsg(uid,d) { /* no-op: Firebase handles history */ }
@@ -2888,7 +2888,7 @@ window.sendFile=async function(inp){
   const MAX_IMG = 10*1024*1024; // 10MB
   if(file.size > MAX_IMG){ toast('Image 10MB se choti honi chahiye'); return; }
 
-  toast('Photo bhej raha hai... ⏳');
+  toast('Sending photo... ⏳');
 
   const reader = new FileReader();
   reader.onload = async e => {
@@ -2896,7 +2896,7 @@ window.sendFile=async function(inp){
     const t = getTime();
     compressAndSend(res, file, t);
   };
-  reader.onerror = () => toast('File read nahi ho payi');
+  reader.onerror = () => toast('Could not read file');
   reader.readAsDataURL(file);
 };
 
@@ -3022,7 +3022,7 @@ window.searchUserFromSettings=function(val){
 
 window.copyMyId=function(){
   if(!myId) return;
-  navigator.clipboard.writeText(myId).then(()=>toast('ID copy ho gaya ✓')).catch(()=>toast('ID: '+myId));
+  navigator.clipboard.writeText(myId).then(()=>toast('ID copied ✓')).catch(()=>toast('ID: '+myId));
 };
 
 window.changePassword=function(){
@@ -3038,27 +3038,35 @@ window.changePassword=function(){
 
 
 window.changeMalaTarget=function(){
-  const v=prompt('Mala target kitna rakhna hai?',malaTarget);
+  const v=prompt('Set mala target:',malaTarget);
   if(v&&!isNaN(v)&&parseInt(v)>0){
     malaTarget=parseInt(v);
     localStorage.setItem('dc_mala_target',malaTarget);
     document.getElementById('malaTargetDisplay').textContent=malaTarget+' per mala';
     updateCountUI();
-    toast('Target '+malaTarget+' set ho gaya!');
+    toast('Target set to '+malaTarget+'!');
   }
 };
 
 window.editProfile=function(){
-  const name=prompt('Naya naam:',myName);
-  if(name&&name.trim()){ myName=name.trim(); localStorage.setItem('dc_name',myName); updateSettingsUI(); document.getElementById('userNameDisplay').textContent=myName; toast('Profile update ho gaya!'); }
+  const name=prompt('New name:',myName);
+  if(name&&name.trim()){
+    myName=name.trim();
+    localStorage.setItem('dc_name',myName);
+    // Firebase mein bhi update karo — taaki chat messages mein bhi naya naam aaye
+    if(myId) set(ref(db,`users/${myId}/name`), myName).catch(()=>{});
+    updateSettingsUI();
+    document.getElementById('userNameDisplay').textContent=myName;
+    toast('Name updated ✓');
+  }
 };
 
 window.clearAllChats=function(){
-  if(confirm('Saari chats delete karna chahte ho?')){
+  if(confirm('Delete all chats?')){
     localStorage.removeItem('dc_chats');
     Object.keys(following).forEach(uid=>localStorage.removeItem('dc_hist_'+uid));
     renderChatList();
-    toast('Sab clear ho gaya ✓');
+    toast('All cleared ✓');
   }
 };
 
@@ -3189,7 +3197,7 @@ window.ctxReply=function(){
   document.getElementById('msgContext').classList.remove('show');
 };
 window.ctxCopy=function(){
-  if(_ctxMsg&&_ctxMsg.text){navigator.clipboard.writeText(_ctxMsg.text).then(()=>toast('Copy ho gaya ✓')).catch(()=>toast('Copy nahi hua'));}
+  if(_ctxMsg&&_ctxMsg.text){navigator.clipboard.writeText(_ctxMsg.text).then(()=>toast('Copied ✓')).catch(()=>toast('Could not copy'));}
   document.getElementById('msgContext').classList.remove('show');
 };
 window.ctxDownload=function(){
