@@ -911,6 +911,8 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
       <div class="chat-hst" id="chatStatus">...</div>
     </div>
     <div class="chat-hacts">
+      <div class="chat-icon-btn" id="selectModeBtn" onclick="toggleSelectMode()" title="Select Messages" style="display:none;">☑️</div>
+      <div class="chat-icon-btn" id="deleteSelectedBtn" onclick="deleteSelectedMsgs()" title="Delete Selected" style="display:none;background:rgba(255,68,68,0.2);border-color:#ff4444;">🗑️</div>
       <div class="chat-icon-btn" onclick="refreshChat()" title="Refresh">🔄</div>
     </div>
   </div>
@@ -1145,6 +1147,7 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
   <div class="ctx-item" onclick="ctxReply()"><span class="ctx-icon">↩</span> Reply</div>
   <div class="ctx-item" onclick="ctxCopy()"><span class="ctx-icon">📋</span> Copy</div>
   <div class="ctx-item" onclick="ctxEdit()" id="ctxEditItem" style="display:none"><span class="ctx-icon">✏️</span> Edit</div>
+  <div class="ctx-item" onclick="ctxDelete()" id="ctxDeleteItem" style="display:none;color:#ff4444;"><span class="ctx-icon">🗑️</span> Delete</div>
   <div class="ctx-item" onclick="ctxDownload()" id="ctxDlItem" style="display:none"><span class="ctx-icon">⬇</span> Save</div>
   <div class="ctx-item" onclick="document.getElementById('msgContext').classList.remove('show')"><span class="ctx-icon">✕</span> Close</div>
 </div>
@@ -1331,10 +1334,21 @@ window.logoutUser = async function() {
     const _setup = localStorage.getItem('dc_setup_done');
     const _name = localStorage.getItem('dc_name');
     const _avatar = localStorage.getItem('dc_avatar');
+    const _following = localStorage.getItem('dc_following');
+    const _chats = localStorage.getItem('dc_chats');
+    const _blocked = localStorage.getItem('dc_blocked');
+    const _blockedData = localStorage.getItem('dc_blocked_data');
+    const _reqstatus = localStorage.getItem('dc_reqstatus');
     if(_uid && _pass) localStorage.setItem('dc_pass_'+_uid, _pass);
     if(_uid && _setup) localStorage.setItem('dc_setup_done_'+_uid, '1');
     if(_uid && _name) localStorage.setItem('dc_name_'+_uid, _name);
     if(_uid && _avatar) localStorage.setItem('dc_avatar_'+_uid, _avatar);
+    // Following, chats, blocked sab save karo — wapas login pe restore honge
+    if(_uid && _following) localStorage.setItem('dc_following_'+_uid, _following);
+    if(_uid && _chats) localStorage.setItem('dc_chats_'+_uid, _chats);
+    if(_uid && _blocked) localStorage.setItem('dc_blocked_'+_uid, _blocked);
+    if(_uid && _blockedData) localStorage.setItem('dc_blocked_data_'+_uid, _blockedData);
+    if(_uid && _reqstatus) localStorage.setItem('dc_reqstatus_'+_uid, _reqstatus);
 
     await signOut(auth);
     localStorage.removeItem('dc_my_id');
@@ -2081,6 +2095,8 @@ function renderChatList() {
 }
 
 window.openChat=async function(uid,name) {
+  // Safety: agar myId nahi hai toh Firebase ready nahi
+  if(!myId){ toast('Please wait, loading...'); return; }
   // Block check — agar blocked hai toh chat nahi kholenge
   if(isBlocked(uid)){
     toast('You have blocked this user 🚫'); return;
@@ -2136,6 +2152,9 @@ window.openChat=async function(uid,name) {
   });
 
   showScreen('chatScreen');
+  // Select mode button dikhao
+  const selectBtn = document.getElementById('selectModeBtn');
+  if(selectBtn) selectBtn.style.display = 'flex';
 }
 
 window.refreshChat=function(){
@@ -2155,6 +2174,10 @@ window.refreshChatList=function(){
 };
 
 window.closeChatScreen=function(){
+  // Select mode reset karo
+  if(_selectMode) toggleSelectMode();
+  const selectBtn = document.getElementById('selectModeBtn');
+  if(selectBtn) selectBtn.style.display = 'none';
   // Listener band karo
   if(_activeListener){ _activeListener(); _activeListener=null; }
   // Wapas jaate waqt bhi read mark karo
@@ -3103,11 +3126,20 @@ window.editProfile=function(){
 };
 
 window.clearAllChats=function(){
-  if(confirm('Delete all chats?')){
+  if(confirm('Delete all chats? (Sirf local data clear hoga)')){
+    const chats=JSON.parse(localStorage.getItem('dc_chats')||'{}');
+    // Cache clear karo har chat ka
+    Object.keys(chats).forEach(uid=>{
+      if(myId){
+        const roomId=chatRoomId(myId,uid);
+        localStorage.removeItem('dc_msgcache_'+roomId);
+        _globalShownKeys.delete(roomId);
+      }
+      localStorage.removeItem('dc_hasunread_'+uid);
+    });
     localStorage.removeItem('dc_chats');
-    Object.keys(following).forEach(uid=>localStorage.removeItem('dc_hist_'+uid));
     renderChatList();
-    toast('All cleared ✓');
+    toast('All chats cleared ✓');
   }
 };
 
@@ -3224,10 +3256,13 @@ function showCtxMenu(data, touchY, isRight){
   const ctx=document.getElementById('msgContext');
   const dlItem=document.getElementById('ctxDlItem');
   const editItem=document.getElementById('ctxEditItem');
+  const deleteItem=document.getElementById('ctxDeleteItem');
   if(dlItem) dlItem.style.display=data.src?'flex':'none';
   // Show Edit only for own text messages
   if(editItem) editItem.style.display=(data.isMe && data.text)?'flex':'none';
-  const menuH=180;
+  // Show Delete for own messages only
+  if(deleteItem) deleteItem.style.display=data.isMe?'flex':'none';
+  const menuH=210;
   let top=touchY-menuH-10;
   if(top<10) top=touchY+10;
   ctx.style.top=top+'px';
@@ -3235,6 +3270,19 @@ function showCtxMenu(data, touchY, isRight){
   ctx.style.right=isRight?'12px':'auto';
   ctx.classList.add('show');
 }
+window.ctxDelete=function(){
+  if(!_ctxMsg||!_ctxMsg.id||!currentChatId) return;
+  document.getElementById('msgContext').classList.remove('show');
+  if(!confirm('Delete this message?')) return;
+  const msgId=_ctxMsg.id;
+  const roomId=chatRoomId(myId,currentChatId);
+  // Firebase se delete karo
+  remove(ref(db,`chats/${roomId}/messages/${msgId}`)).catch(()=>{});
+  // DOM se bhi hatao
+  const el=document.querySelector(`.msg-wrap[data-msgid="${msgId}"]`);
+  if(el) el.remove();
+  toast('Message deleted ✓');
+};
 window.ctxReply=function(){
   if(_ctxMsg){replyTo={text:_ctxMsg.text||'',msgId:_ctxMsg.id};showReplyBar(_ctxMsg.text||'');}
   document.getElementById('msgContext').classList.remove('show');
@@ -3299,6 +3347,74 @@ document.addEventListener('click',e=>{
   }
 });
 
+// ===== MULTI-SELECT MESSAGE DELETE =====
+let _selectMode = false;
+let _selectedMsgIds = new Set();
+
+window.toggleSelectMode = function() {
+  _selectMode = !_selectMode;
+  _selectedMsgIds.clear();
+  const btn = document.getElementById('selectModeBtn');
+  const delBtn = document.getElementById('deleteSelectedBtn');
+  if(_selectMode) {
+    btn.style.background = 'rgba(255,107,0,0.3)';
+    btn.style.borderColor = 'var(--chat-accent)';
+    delBtn.style.display = 'flex';
+    toast('Messages select karo, phir 🗑️ tap karo');
+    // All msg bubbles pe select overlay add karo
+    document.querySelectorAll('.msg-wrap[data-msgid]').forEach(w => {
+      w.style.cursor = 'pointer';
+      w.style.opacity = '1';
+      w.addEventListener('click', _onMsgSelectClick);
+    });
+  } else {
+    btn.style.background = '';
+    btn.style.borderColor = '';
+    delBtn.style.display = 'none';
+    document.querySelectorAll('.msg-wrap[data-msgid]').forEach(w => {
+      w.style.cursor = '';
+      w.style.opacity = '1';
+      w.style.outline = '';
+      w.removeEventListener('click', _onMsgSelectClick);
+    });
+  }
+};
+
+function _onMsgSelectClick(e) {
+  if(!_selectMode) return;
+  const msgId = this.dataset.msgid;
+  if(!msgId) return;
+  if(_selectedMsgIds.has(msgId)) {
+    _selectedMsgIds.delete(msgId);
+    this.style.outline = '';
+    this.style.opacity = '1';
+  } else {
+    _selectedMsgIds.add(msgId);
+    this.style.outline = '2px solid var(--chat-accent)';
+    this.style.opacity = '0.7';
+    this.style.borderRadius = '18px';
+  }
+  const delBtn = document.getElementById('deleteSelectedBtn');
+  if(delBtn) delBtn.textContent = _selectedMsgIds.size > 0 ? `🗑️ ${_selectedMsgIds.size}` : '🗑️';
+}
+
+window.deleteSelectedMsgs = async function() {
+  if(_selectedMsgIds.size === 0) { toast('Koi message select nahi kiya'); return; }
+  if(!confirm(`${_selectedMsgIds.size} message(s) delete karo?`)) return;
+  const roomId = chatRoomId(myId, currentChatId);
+  const promises = [];
+  _selectedMsgIds.forEach(msgId => {
+    promises.push(remove(ref(db, `chats/${roomId}/messages/${msgId}`)).catch(()=>{}));
+    const el = document.querySelector(`.msg-wrap[data-msgid="${msgId}"]`);
+    if(el) el.remove();
+  });
+  await Promise.all(promises);
+  const count = _selectedMsgIds.size;
+  _selectedMsgIds.clear();
+  toggleSelectMode(); // Select mode band karo
+  toast(`${count} message(s) delete ho gaye ✓`);
+};
+
 // ===== CHAT INFO =====
 window.openChatInfo=function(){
   if(!currentChatId) return;
@@ -3329,10 +3445,20 @@ function handleAuthUser(user) {
   const uidSetup  = localStorage.getItem('dc_setup_done_'+shortId);
   const uidName   = localStorage.getItem('dc_name_'+shortId);
   const uidAvatar = localStorage.getItem('dc_avatar_'+shortId);
+  const uidFollowing = localStorage.getItem('dc_following_'+shortId);
+  const uidChats = localStorage.getItem('dc_chats_'+shortId);
+  const uidBlocked = localStorage.getItem('dc_blocked_'+shortId);
+  const uidBlockedData = localStorage.getItem('dc_blocked_data_'+shortId);
+  const uidReqstatus = localStorage.getItem('dc_reqstatus_'+shortId);
   if(uidPass   && !localStorage.getItem('dc_pass'))       localStorage.setItem('dc_pass', uidPass);
   if(uidSetup  && !localStorage.getItem('dc_setup_done')) localStorage.setItem('dc_setup_done','1');
   if(uidName   && !localStorage.getItem('dc_name'))       { localStorage.setItem('dc_name', uidName); myName=uidName; }
   if(uidAvatar && !localStorage.getItem('dc_avatar'))     { localStorage.setItem('dc_avatar', uidAvatar); myAvatar=uidAvatar; }
+  if(uidFollowing && !localStorage.getItem('dc_following')) localStorage.setItem('dc_following', uidFollowing);
+  if(uidChats && !localStorage.getItem('dc_chats')) localStorage.setItem('dc_chats', uidChats);
+  if(uidBlocked && !localStorage.getItem('dc_blocked')) localStorage.setItem('dc_blocked', uidBlocked);
+  if(uidBlockedData && !localStorage.getItem('dc_blocked_data')) localStorage.setItem('dc_blocked_data', uidBlockedData);
+  if(uidReqstatus && !localStorage.getItem('dc_reqstatus')) localStorage.setItem('dc_reqstatus', uidReqstatus);
 
   const savedPass = localStorage.getItem('dc_pass');
   const setupDone = localStorage.getItem('dc_setup_done');
