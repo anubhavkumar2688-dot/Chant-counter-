@@ -1177,26 +1177,35 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 <input type="file" id="cameraInput" onchange="sendFile(this)" accept="image/*" capture="environment">
 <input type="file" id="avatarInput" accept="image/*" onchange="setAvatar(this)">
 <!-- QR SCANNER MODAL -->
-<div id="qrScannerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:700;flex-direction:column;align-items:center;justify-content:center;">
-  <div style="width:100%;max-width:360px;padding:0 16px;text-align:center;">
-    <div style="font-size:16px;font-weight:700;color:var(--chat-accent);margin-bottom:4px;">📷 QR Scanner</div>
-    <div style="font-size:12px;color:var(--chat-muted);margin-bottom:16px;">Friend ka QR Code scan karo</div>
-    <div style="position:relative;border-radius:20px;overflow:hidden;background:#000;aspect-ratio:1;">
-      <video id="qrVideo" style="width:100%;height:100%;object-fit:cover;" autoplay muted playsinline></video>
-      <!-- Scanner overlay frame -->
+<div id="qrScannerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.97);z-index:700;flex-direction:column;align-items:center;justify-content:center;">
+  <div style="width:100%;max-width:360px;padding:0 20px;text-align:center;">
+    <div style="font-size:17px;font-weight:700;color:var(--chat-accent);margin-bottom:3px;">📷 QR Scanner</div>
+    <div style="font-size:12px;color:var(--chat-muted);margin-bottom:14px;">Friend ka QR Code scan karo</div>
+
+    <!-- Camera view -->
+    <div id="qrCameraWrap" style="position:relative;border-radius:20px;overflow:hidden;background:#111;aspect-ratio:1;display:none;">
+      <video id="qrVideo" style="width:100%;height:100%;object-fit:cover;" autoplay muted playsinline webkit-playsinline></video>
       <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
-        <div style="width:65%;height:65%;position:relative;">
-          <div style="position:absolute;top:0;left:0;width:28px;height:28px;border-top:3px solid var(--chat-accent);border-left:3px solid var(--chat-accent);border-radius:4px 0 0 0;"></div>
-          <div style="position:absolute;top:0;right:0;width:28px;height:28px;border-top:3px solid var(--chat-accent);border-right:3px solid var(--chat-accent);border-radius:0 4px 0 0;"></div>
-          <div style="position:absolute;bottom:0;left:0;width:28px;height:28px;border-bottom:3px solid var(--chat-accent);border-left:3px solid var(--chat-accent);border-radius:0 0 0 4px;"></div>
-          <div style="position:absolute;bottom:0;right:0;width:28px;height:28px;border-bottom:3px solid var(--chat-accent);border-right:3px solid var(--chat-accent);border-radius:0 0 4px 0;"></div>
+        <div style="width:62%;height:62%;position:relative;">
+          <div style="position:absolute;top:0;left:0;width:26px;height:26px;border-top:3px solid var(--chat-accent);border-left:3px solid var(--chat-accent);border-radius:3px 0 0 0;"></div>
+          <div style="position:absolute;top:0;right:0;width:26px;height:26px;border-top:3px solid var(--chat-accent);border-right:3px solid var(--chat-accent);border-radius:0 3px 0 0;"></div>
+          <div style="position:absolute;bottom:0;left:0;width:26px;height:26px;border-bottom:3px solid var(--chat-accent);border-left:3px solid var(--chat-accent);border-radius:0 0 0 3px;"></div>
+          <div style="position:absolute;bottom:0;right:0;width:26px;height:26px;border-bottom:3px solid var(--chat-accent);border-right:3px solid var(--chat-accent);border-radius:0 0 3px 0;"></div>
           <div id="qrScanLine" style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--chat-accent),transparent);animation:qrScan 2s linear infinite;"></div>
         </div>
       </div>
-      <canvas id="qrCanvas" style="display:none;"></canvas>
     </div>
-    <div id="qrScanStatus" style="margin-top:14px;font-size:13px;color:var(--chat-muted);min-height:20px;">Camera khol raha hai...</div>
-    <button onclick="closeQrScanner()" style="margin-top:14px;width:100%;padding:14px;border-radius:16px;border:1px solid var(--chat-border);background:var(--chat-surface);color:var(--chat-muted);font-size:14px;cursor:pointer;font-family:'Poppins',sans-serif;">✕ Band Karo</button>
+
+    <!-- Status / icon shown when no camera yet -->
+    <div id="qrIconWrap" style="font-size:64px;margin:10px 0 6px;">📷</div>
+
+    <div id="qrScanStatus" style="margin-top:10px;font-size:13px;color:var(--chat-muted);min-height:36px;line-height:1.6;">Shuru ho raha hai...</div>
+
+    <!-- Buttons row -->
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;">
+      <button id="qrGalleryBtn" onclick="_pickQrFromGallery()" style="width:100%;padding:14px;border-radius:16px;border:none;background:linear-gradient(135deg,var(--chat-accent),#ff8c00);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">🖼️ Gallery se Scan karo</button>
+      <button onclick="closeQrScanner()" style="width:100%;padding:13px;border-radius:16px;border:1px solid var(--chat-border);background:var(--chat-surface);color:var(--chat-muted);font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif;">✕ Band Karo</button>
+    </div>
   </div>
 </div>
 <style>
@@ -2581,177 +2590,139 @@ window.searchUser=function(val) {
   }, 400);
 };
 
-// ===== QR CODE SCANNER — BarcodeDetector (native, no library) =====
+// ===== QR CODE SCANNER =====
 let _qrStream = null;
 let _qrInterval = null;
-let _qrDetector = null;
 let _qrScanned = false;
+
+function _setQrStatus(msg, color) {
+  const el = document.getElementById('qrScanStatus');
+  if(el) { el.innerHTML = msg; el.style.color = color || 'var(--chat-muted)'; }
+}
 
 // Extract 6-char user ID from any QR data string
 function _extractIdFromQr(data) {
   if(!data) return null;
   let id = null;
-  // Try URL params: ?add=XXXXXX or ?id=XXXXXX or ?user=XXXXXX or #XXXXXX
   try {
     const url = new URL(data);
-    id = url.searchParams.get('add') || url.searchParams.get('id') || url.searchParams.get('user') || url.hash.replace('#','');
+    // Check all common param names
+    id = url.searchParams.get('add') || url.searchParams.get('id') || url.searchParams.get('user');
+    if(!id) id = url.hash.replace(/^#\/?/,'');
   } catch(e) {}
-  // Clean up
-  if(id) id = id.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(id) { id = id.trim().toUpperCase().replace(/[^A-Z0-9]/g,''); }
   if(id && id.length === 6) return id;
-  // Try: any 6 alphanumeric word in the string
-  const upper = data.toUpperCase().replace(/[^A-Z0-9]/g,' ').trim();
-  const parts = upper.split(/\s+/);
-  for(const p of parts) {
-    if(p.length === 6) return p;
-  }
-  // Try regex match
-  const m = upper.match(/([A-Z0-9]{6})/);
-  return m ? m[1] : null;
+  // Plain string — find any 6-char alphanumeric token
+  const upper = data.toUpperCase();
+  const tokens = upper.split(/[^A-Z0-9]+/);
+  for(const t of tokens) { if(t.length === 6) return t; }
+  const m = upper.match(/[A-Z0-9]{6}/);
+  return m ? m[0] : null;
 }
 
 window.openQrScanner = async function() {
   _qrScanned = false;
-  const modal = document.getElementById('qrScannerModal');
-  modal.style.display = 'flex';
-  const status = document.getElementById('qrScanStatus');
+  document.getElementById('qrScannerModal').style.display = 'flex';
+  document.getElementById('qrCameraWrap').style.display = 'none';
+  document.getElementById('qrIconWrap').style.display = 'block';
+  _setQrStatus('Camera access maang raha hai...', 'var(--chat-muted)');
 
-  // Check BarcodeDetector support
-  if(!('BarcodeDetector' in window)) {
-    // Fallback: show gallery picker
-    status.innerHTML = '⚠️ Camera scanner is nahi chala — <br><strong style="color:var(--chat-accent)">Gallery se QR image choose karo</strong>';
-    status.style.color = '#ffaa00';
-    // Show a pick-from-gallery button
-    let galleryBtn = document.getElementById('qrGalleryFallbackBtn');
-    if(!galleryBtn) {
-      galleryBtn = document.createElement('button');
-      galleryBtn.id = 'qrGalleryFallbackBtn';
-      galleryBtn.textContent = '🖼️ Gallery se Scan karo';
-      galleryBtn.style.cssText = 'margin-top:12px;width:100%;padding:14px;border-radius:16px;border:none;background:linear-gradient(135deg,var(--chat-accent),#ff8c00);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:\'Poppins\',sans-serif;';
-      galleryBtn.onclick = _pickQrFromGallery;
-      status.parentNode.insertBefore(galleryBtn, document.getElementById('qrScanStatus').nextSibling);
-    }
-    galleryBtn.style.display = 'block';
-    // Hide video frame
-    const videoWrap = document.querySelector('#qrScannerModal [style*="aspect-ratio"]');
-    if(videoWrap) videoWrap.style.display = 'none';
+  // Try camera + BarcodeDetector
+  const hasBD = 'BarcodeDetector' in window;
+
+  if(!hasBD) {
+    _setQrStatus('⚠️ Is device pe live scanner nahi chala.<br>Neeche <b style="color:var(--chat-accent)">Gallery se Scan karo</b> tap karo', '#ffaa00');
     return;
   }
 
-  // BarcodeDetector available
-  try {
-    _qrDetector = new BarcodeDetector({ formats: ['qr_code'] });
-  } catch(e) {
-    _qrDetector = new BarcodeDetector(); // fallback without format hint
-  }
-
-  // Show video frame
-  const videoWrap = document.querySelector('#qrScannerModal [style*="aspect-ratio"]');
-  if(videoWrap) videoWrap.style.display = 'block';
-  const galleryBtn = document.getElementById('qrGalleryFallbackBtn');
-  if(galleryBtn) galleryBtn.style.display = 'none';
-
-  status.textContent = 'Camera khol raha hai...';
-  status.style.color = 'var(--chat-muted)';
-
   try {
     _qrStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } }
     });
-    const video = document.getElementById('qrVideo');
-    video.srcObject = _qrStream;
-    await video.play();
-    status.textContent = '📷 QR Code frame ke andar rakho...';
-    status.style.color = 'var(--chat-muted)';
-
-    // Scan loop using BarcodeDetector
-    _qrInterval = setInterval(async () => {
-      if(_qrScanned) return;
-      const video = document.getElementById('qrVideo');
-      if(!video || video.readyState < 2 || video.paused) return;
-      try {
-        const barcodes = await _qrDetector.detect(video);
-        if(barcodes && barcodes.length > 0) {
-          const raw = barcodes[0].rawValue;
-          _qrScanned = true;
-          _handleQrResult(raw);
-        }
-      } catch(e) {}
-    }, 300);
-
   } catch(e) {
-    if(e.name === 'NotAllowedError') {
-      status.innerHTML = '❌ Camera permission nahi mila<br><small style="color:var(--chat-muted)">Browser settings mein camera allow karo</small>';
-    } else if(e.name === 'NotFoundError') {
-      status.textContent = '❌ Koi camera nahi mila is device pe';
-    } else {
-      status.textContent = '❌ Camera nahi khula — dobara try karo';
-    }
-    status.style.color = '#f44336';
+    let msg = '❌ Camera nahi khula.';
+    if(e.name === 'NotAllowedError') msg = '❌ Camera permission denied.<br><small>Browser settings mein camera allow karo, ya Gallery option use karo.</small>';
+    else if(e.name === 'NotFoundError') msg = '❌ Camera nahi mila. Gallery se scan karo.';
+    _setQrStatus(msg, '#f44336');
+    return;
   }
+
+  // Camera open — show video
+  const video = document.getElementById('qrVideo');
+  video.srcObject = _qrStream;
+  try { await video.play(); } catch(e) {}
+  document.getElementById('qrCameraWrap').style.display = 'block';
+  document.getElementById('qrIconWrap').style.display = 'none';
+  _setQrStatus('📷 QR Code frame ke beech mein rakho...', 'var(--chat-muted)');
+
+  let detector;
+  try { detector = new BarcodeDetector({ formats: ['qr_code'] }); }
+  catch(e) { detector = new BarcodeDetector(); }
+
+  _qrInterval = setInterval(async () => {
+    if(_qrScanned) return;
+    if(!video || video.readyState < 2 || video.paused || video.ended) return;
+    try {
+      const codes = await detector.detect(video);
+      if(codes && codes.length > 0) {
+        _qrScanned = true;
+        clearInterval(_qrInterval); _qrInterval = null;
+        _handleQrResult(codes[0].rawValue);
+      }
+    } catch(e) {}
+  }, 350);
 };
 
-// Gallery picker fallback — works on all devices
-function _pickQrFromGallery() {
+// Gallery picker — works on ALL devices / browsers
+window._pickQrFromGallery = function() {
   const inp = document.createElement('input');
   inp.type = 'file'; inp.accept = 'image/*';
+  inp.style.display = 'none';
+  document.body.appendChild(inp);
   inp.onchange = async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files && e.target.files[0];
+    inp.remove();
     if(!file) return;
-    const status = document.getElementById('qrScanStatus');
-    status.textContent = 'Scan ho raha hai...';
-    status.style.color = 'var(--chat-muted)';
+    _setQrStatus('🔍 Image scan ho rahi hai...', 'var(--chat-muted)');
     try {
-      const img = new Image();
-      img.src = URL.createObjectURL(file);
-      await new Promise(r => img.onload = r);
+      const bitmap = await createImageBitmap(file);
       if('BarcodeDetector' in window) {
         const detector = new BarcodeDetector({ formats: ['qr_code'] });
-        const codes = await detector.detect(img);
-        if(codes && codes.length > 0) {
-          _handleQrResult(codes[0].rawValue);
-          return;
-        }
+        const codes = await detector.detect(bitmap);
+        if(codes && codes.length > 0) { _handleQrResult(codes[0].rawValue); return; }
       }
-      status.textContent = '❌ QR code nahi mila image mein';
-      status.style.color = '#f44336';
-    } catch(e) {
-      status.textContent = '❌ Image scan nahi hui — dobara try karo';
-      status.style.color = '#f44336';
+      // Canvas fallback read (no library — just show failure)
+      _setQrStatus('❌ QR code nahi mila image mein.<br><small>Clear photo lo aur try karo</small>', '#f44336');
+    } catch(err) {
+      _setQrStatus('❌ Image read nahi hui — dobara try karo', '#f44336');
     }
   };
   inp.click();
-}
+};
 
-function _handleQrResult(data) {
-  const id = _extractIdFromQr(data);
+function _handleQrResult(raw) {
+  const id = _extractIdFromQr(raw);
   if(!id) {
-    const status = document.getElementById('qrScanStatus');
-    if(status) { status.textContent = '⚠️ Valid ID nahi mili QR mein — dobara try karo'; status.style.color = '#ffaa00'; }
+    _setQrStatus('⚠️ Valid 6-char ID nahi mili QR mein — dobara try karo', '#ffaa00');
     _qrScanned = false;
     return;
   }
   closeQrScanner();
-  // Navigate to people screen first
   showScreen('peopleScreen');
-  // Small delay so screen renders first
   setTimeout(() => {
     const bar = document.getElementById('searchBar');
-    if(bar) {
-      bar.value = id;
-      bar.dispatchEvent(new Event('input')); // trigger oninput
-    }
+    if(bar) { bar.value = id; }
     window.searchUser(id);
-    toast('🎯 ID mili: ' + id + ' — search ho raha hai!');
-  }, 200);
+    toast('🎯 ID mili: ' + id);
+  }, 150);
 }
 
 window.closeQrScanner = function() {
   _qrScanned = false;
   clearInterval(_qrInterval); _qrInterval = null;
   if(_qrStream) { _qrStream.getTracks().forEach(t => t.stop()); _qrStream = null; }
-  const video = document.getElementById('qrVideo');
-  if(video) { video.srcObject = null; }
+  const v = document.getElementById('qrVideo');
+  if(v) v.srcObject = null;
   document.getElementById('qrScannerModal').style.display = 'none';
 };
 
