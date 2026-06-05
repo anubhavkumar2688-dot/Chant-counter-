@@ -2327,8 +2327,8 @@ window.renderNotifications = function() {
           <div class="notif-text"><strong>${escH(n.name)}</strong> sent you a follow request</div>
           <div class="notif-time">${timeAgo}</div>
           ${n.status==='pending' ? `<div class="notif-actions">
-            <button class="notif-accept-btn" onclick="acceptFollowRequest('${n.from}','${escH(n.name)}','${n.id}')">✅ Accept</button>
-            <button class="notif-reject-btn" onclick="rejectFollowRequest('${n.from}','${escH(n.name)}','${n.id}')">❌ Reject</button>
+            <button class="notif-accept-btn" onclick="acceptFollowRequest('${n.from}','${escH(n.name)}','${n.firebaseKey||n.id}')">✅ Accept</button>
+            <button class="notif-reject-btn" onclick="rejectFollowRequest('${n.from}','${escH(n.name)}','${n.firebaseKey||n.id}')">❌ Reject</button>
           </div>` : `<div style="font-size:12px;margin-top:6px;color:${n.status==='accepted'?'#4CAF50':'var(--chat-muted)'};">${n.status==='accepted'?'✅ Accepted':'❌ Rejected'}</div>`}
         </div>`;
     } else if(n.type === 'request_accepted') {
@@ -2386,40 +2386,58 @@ window.sendFollowRequest = async function(uid, name) {
   const blockedSnap = await get(ref(db, `blocked/${uid}/${myId}`));
   if(blockedSnap.val()) { toast('Cannot send request'); return; }
 
-  // Save request in Firebase: followRequests/{toUid}/{fromUid}
+  // MUTUAL AUTO-ADD: Agar B ne already A ko request bheji hai toh dono add ho jaao
+  const theirReqSnap = await get(ref(db, `followRequests/${myId}/${uid}`));
+  const theirReq = theirReqSnap.val();
+  if(theirReq && (theirReq.status === 'pending' || theirReq.status === 'accepted')) {
+    // Dono ko accept karo — mutual add
+    await _mutualAdd(uid, name, myId, myName);
+    toast('Dono add ho gaye! 🎉');
+    renderPeople();
+    renderChatList();
+    return;
+  }
+
+  // Save request in Firebase
   await set(ref(db, `followRequests/${uid}/${myId}`), {
     from: myId, name: myName, status: 'pending', ts: Date.now()
   });
-  // Send notification to receiver via Firebase
+  // Send notification to receiver
   await set(ref(db, `notifications/${uid}/${myId}_freq`), {
     type: 'follow_request', from: myId, name: myName,
     status: 'pending', ts: Date.now(), read: false
   });
   setRequestStatus(uid, 'sent');
-  toast('Follow request sent ✓');
+  toast('Follow request bhej di ✓');
   renderPeople();
   renderSearchResults_fromCache(uid, name);
 };
 
-// ===== ACCEPT FOLLOW REQUEST =====
-window.acceptFollowRequest = async function(fromUid, fromName, notifId) {
-  if(!myId) return;
-  // Update request status
-  await set(ref(db, `followRequests/${myId}/${fromUid}/status`), 'accepted');
-  // Add to following — uid field zaroori hai renderPeople ke liye
-  following[fromUid] = { name: fromName, uid: fromUid };
+// Dono ko ek saath add karo
+async function _mutualAdd(uidA, nameA, uidB, nameB) {
+  // A → B
+  following[uidA] = { name: nameA, uid: uidA };
   localStorage.setItem('dc_following', JSON.stringify(following));
-  // Listen to their online status
-  listenUserStatus(fromUid);
-  // Notify sender: request accepted
-  await set(ref(db, `notifications/${fromUid}/${myId}_acc`), {
-    type: 'request_accepted', from: myId, name: myName, ts: Date.now(), read: false
-  });
-  // Update local notif status
+  listenUserStatus(uidA);
+  await set(ref(db, `followRequests/${uidB}/${uidA}/status`), 'accepted').catch(()=>{});
+  await set(ref(db, `followRequests/${uidA}/${uidB}/status`), 'accepted').catch(()=>{});
+  await set(ref(db, `userFollowing/${uidB}/${uidA}`), { name: nameA, uid: uidA, ts: Date.now() }).catch(()=>{});
+  await set(ref(db, `userFollowing/${uidA}/${uidB}`), { name: nameB, uid: uidB, ts: Date.now() }).catch(()=>{});
+  // Notify A that B accepted
+  await set(ref(db, `notifications/${uidA}/${uidB}_acc`), {
+    type: 'request_accepted', from: uidB, name: nameB, ts: Date.now(), read: false
+  }).catch(()=>{});
+}
+
+// ===== ACCEPT FOLLOW REQUEST =====
+window.acceptFollowRequest = async function(fromUid, fromName, notifKey) {
+  if(!myId) return;
+  await _mutualAdd(fromUid, fromName, myId, myName);
+  // Update local notif
   const notifs = getNotifications();
-  const idx = notifs.findIndex(n=>n.id===notifId||n.firebaseKey===notifId);
-  if(idx>=0) { notifs[idx].status='accepted'; saveNotifications(notifs); }
-  toast(fromName + ' accepted ✅');
+  const idx = notifs.findIndex(n => n.firebaseKey === notifKey || n.id === notifKey);
+  if(idx >= 0) { notifs[idx].status = 'accepted'; saveNotifications(notifs); }
+  toast(fromName + ' accepted ✅ — ab chat kar sakte ho!');
   renderNotifications();
   renderPeople();
   renderChatList();
@@ -2507,6 +2525,18 @@ function listenNotifications() {
       filtered.unshift(notif);
       saveNotifications(filtered);
       updateNotifBadge();
+
+      // AUTO-ADD: jab request_accepted mile toh sender ko following mein add karo
+      if(d.type === 'request_accepted' && d.from) {
+        if(!following[d.from]) {
+          following[d.from] = { name: d.name || d.from, uid: d.from };
+          localStorage.setItem('dc_following', JSON.stringify(following));
+          listenUserStatus(d.from);
+          renderPeople();
+          renderChatList();
+          toast(escH(d.name||'User') + ' ab tumhara friend hai! 🎉');
+        }
+      }
     });
   });
 }
@@ -2716,7 +2746,7 @@ function _handleQrResult(raw) {
     if(bar) { bar.value = id; }
     window.searchUser(id);
     toast('🎯 ID mili: ' + id);
-  }, 150);
+  }, 300);
 }
 
 window.closeQrScanner = function() {
@@ -3588,29 +3618,34 @@ window.shareMyId = function() {
 (function checkDeeplink() {
   const params = new URLSearchParams(window.location.search);
   const addId = params.get('add');
-  if(addId && addId.length===6) {
-    window._deepLinkAddId = addId.toUpperCase();
-    // URL clean karo taaki reload pe dobara na chale
+  if(addId && addId.length >= 6) {
+    window._deepLinkAddId = addId.trim().toUpperCase().slice(0,6);
     try { window.history.replaceState({}, '', window.location.pathname); } catch(e) {}
   }
 })();
 
 function handleDeepLink() {
   if(!window._deepLinkAddId) return;
-  if(!myId) {
-    // myId abhi ready nahi — thoda aur wait karo
-    setTimeout(handleDeepLink, 800);
-    return;
-  }
+
+  // myId ready nahi — retry
+  if(!myId) { setTimeout(handleDeepLink, 600); return; }
+
+  // App fully init nahi hua — retry
+  if(!_initMainDone) { setTimeout(handleDeepLink, 600); return; }
+
   const addId = window._deepLinkAddId;
   window._deepLinkAddId = null;
+
+  // People screen pe le jao
   showScreen('peopleScreen');
+
+  // Search bar fill karo aur search trigger karo
   setTimeout(() => {
     const bar = document.getElementById('searchBar');
     if(bar) { bar.value = addId; }
     window.searchUser(addId);
-    toast('🔍 ' + addId + ' search ho raha hai...');
-  }, 300);
+    toast('🔍 ' + addId + ' dhoondh raha hai...');
+  }, 400);
 }
 
 // ===== MULTI-SELECT MESSAGE DELETE =====
