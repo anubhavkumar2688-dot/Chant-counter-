@@ -934,9 +934,7 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 <!-- PEOPLE SCREEN -->
 <div class="screen" id="peopleScreen">
   <div class="people-header">
-    <div style="display:flex;align-items:center;justify-content:space-between;">
-      <div class="people-title">People</div>
-    </div>
+    <div class="people-title">People</div>
     <div style="font-size:11px;color:var(--chat-muted);margin:4px 0 6px;">Find your ID in Settings → Share with friends → They search and follow you here</div>
     <input class="search-bar" id="searchBar" placeholder="🔍 Enter friend's 6-letter ID (e.g. AB12XY)..." 
       oninput="searchUser(this.value)" autocomplete="off" autocorrect="off" spellcheck="false"
@@ -957,14 +955,11 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
   </div>
   <div class="settings-body">
     <!-- ID Card - TOP -->
-    <div style="background:linear-gradient(135deg,#1c1000,#2d1800,#1c1000);border:1.5px solid rgba(255,107,0,0.5);border-radius:20px;padding:20px;margin-bottom:14px;text-align:center;box-shadow:0 6px 24px rgba(255,107,0,0.15);position:relative;overflow:hidden;">
+    <div style="background:linear-gradient(135deg,#1c1000,#2d1800,#1c1000);border:1.5px solid rgba(255,107,0,0.5);border-radius:20px;padding:20px;margin-bottom:14px;text-align:center;box-shadow:0 6px 24px rgba(255,107,0,0.15);position:relative;overflow:hidden;" onclick="copyMyId()">
       <div style="position:absolute;right:-10px;bottom:-15px;font-size:80px;opacity:0.06;font-family:serif;pointer-events:none;">ॐ</div>
       <div style="font-size:10px;color:rgba(255,107,0,0.7);letter-spacing:3px;margin-bottom:8px;font-weight:600;">MY ID — SHARE WITH FRIENDS</div>
-      <div id="myIdDisplay" onclick="copyMyId()" style="font-size:36px;font-weight:700;color:var(--chat-accent);letter-spacing:8px;text-shadow:0 0 20px rgba(255,107,0,0.3);cursor:pointer;">-</div>
-      <div style="font-size:10px;color:rgba(255,107,0,0.5);margin-top:8px;margin-bottom:14px;">📋 Tap ID to copy</div>
-      <div style="display:flex;gap:8px;justify-content:center;">
-        <button onclick="shareMyId()" style="flex:1;padding:10px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--chat-accent),#ff8c00);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">🔗 Share Link</button>
-      </div>
+      <div id="myIdDisplay" style="font-size:36px;font-weight:700;color:var(--chat-accent);letter-spacing:8px;text-shadow:0 0 20px rgba(255,107,0,0.3);">-</div>
+      <div style="font-size:10px;color:rgba(255,107,0,0.5);margin-top:8px;display:flex;align-items:center;justify-content:center;gap:4px;">📋 Tap to copy</div>
     </div>
 
     <!-- Profile card -->
@@ -1150,7 +1145,6 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
   <div class="ctx-item" onclick="ctxReply()"><span class="ctx-icon">↩</span> Reply</div>
   <div class="ctx-item" onclick="ctxCopy()"><span class="ctx-icon">📋</span> Copy</div>
   <div class="ctx-item" onclick="ctxEdit()" id="ctxEditItem" style="display:none"><span class="ctx-icon">✏️</span> Edit</div>
-  <div class="ctx-item" onclick="ctxDelete()" id="ctxDeleteItem" style="display:none;color:#ff4444;"><span class="ctx-icon">🗑️</span> Delete</div>
   <div class="ctx-item" onclick="ctxDownload()" id="ctxDlItem" style="display:none"><span class="ctx-icon">⬇</span> Save</div>
   <div class="ctx-item" onclick="document.getElementById('msgContext').classList.remove('show')"><span class="ctx-icon">✕</span> Close</div>
 </div>
@@ -1174,22 +1168,6 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 <input type="file" id="fileInput" onchange="sendFile(this)" accept="image/*">
 <input type="file" id="cameraInput" onchange="sendFile(this)" accept="image/*" capture="environment">
 <input type="file" id="avatarInput" accept="image/*" onchange="setAvatar(this)">
-<!-- QR SCANNER MODAL -->
-
-<!-- QR CODE MODAL -->
-<div id="qrModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:600;align-items:center;justify-content:center;">
-  <div style="background:var(--chat-surface);border:1px solid var(--chat-border);border-radius:24px;padding:28px 24px;text-align:center;width:300px;max-width:90vw;">
-    <div style="font-size:16px;font-weight:700;color:var(--chat-accent);margin-bottom:4px;">Mera QR Code</div>
-    <div style="font-size:12px;color:var(--chat-muted);margin-bottom:20px;">Scan karke seedha add karo</div>
-    <div id="qrContainer" style="background:#fff;border-radius:16px;padding:16px;display:inline-block;margin-bottom:16px;"></div>
-    <div style="font-size:18px;font-weight:700;color:var(--chat-accent);letter-spacing:6px;margin-bottom:16px;" id="qrIdLabel">-</div>
-    <div style="display:flex;gap:8px;">
-      <button onclick="shareMyId()" style="flex:1;padding:11px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--chat-accent),#ff8c00);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">🔗 Share Link</button>
-      <button onclick="document.getElementById('qrModal').style.display='none'" style="flex:1;padding:11px;border-radius:14px;border:1px solid var(--chat-border);background:none;color:var(--chat-muted);font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif;">Close</button>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
 <!-- NOTIFICATIONS SCREEN -->
@@ -1238,13 +1216,13 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 
-import { getDatabase, ref, set, push, onValue, remove, onDisconnect, get, update, serverTimestamp, query as fbQuery, limitToLast, orderByKey, orderByChild, equalTo }
+import { getDatabase, ref, set, push, onValue, remove, onDisconnect, get, update, serverTimestamp, query as fbQuery, limitToLast, orderByKey }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 // Expose query helpers for paginated loading
-window._fbQueryFns = { query: fbQuery, limitToLast, orderByKey, orderByChild, equalTo };
+window._fbQueryFns = { query: fbQuery, limitToLast, orderByKey };
 
 // ===== EARLY SCREEN SWITCH — Firebase se pehle =====
 function showScreen(id){
@@ -1353,21 +1331,10 @@ window.logoutUser = async function() {
     const _setup = localStorage.getItem('dc_setup_done');
     const _name = localStorage.getItem('dc_name');
     const _avatar = localStorage.getItem('dc_avatar');
-    const _following = localStorage.getItem('dc_following');
-    const _chats = localStorage.getItem('dc_chats');
-    const _blocked = localStorage.getItem('dc_blocked');
-    const _blockedData = localStorage.getItem('dc_blocked_data');
-    const _reqstatus = localStorage.getItem('dc_reqstatus');
     if(_uid && _pass) localStorage.setItem('dc_pass_'+_uid, _pass);
     if(_uid && _setup) localStorage.setItem('dc_setup_done_'+_uid, '1');
     if(_uid && _name) localStorage.setItem('dc_name_'+_uid, _name);
     if(_uid && _avatar) localStorage.setItem('dc_avatar_'+_uid, _avatar);
-    // Following, chats, blocked sab save karo — wapas login pe restore honge
-    if(_uid && _following) localStorage.setItem('dc_following_'+_uid, _following);
-    if(_uid && _chats) localStorage.setItem('dc_chats_'+_uid, _chats);
-    if(_uid && _blocked) localStorage.setItem('dc_blocked_'+_uid, _blocked);
-    if(_uid && _blockedData) localStorage.setItem('dc_blocked_data_'+_uid, _blockedData);
-    if(_uid && _reqstatus) localStorage.setItem('dc_reqstatus_'+_uid, _reqstatus);
 
     await signOut(auth);
     localStorage.removeItem('dc_my_id');
@@ -1396,7 +1363,7 @@ window.logoutUser = async function() {
 };
 
 // ===== STATE =====
-let myId = null, myDisplayId = null, myName = '', myIcon = 'om', myAvatar = null;
+let myId = null, myName = '', myIcon = 'om', myAvatar = null;
 let userPassword = null;
 let count = 0, malaTarget = 108, totalMantras = 0, soundOn = true;
 let selectedMantra = null;
@@ -1490,7 +1457,6 @@ async function checkCpPin() {
         showScreen('chatsListScreen'); renderChatList();
       } else {
         showScreen('counter'); initMain();
-        setTimeout(handleDeepLink, 800);
       }
     } else {
       updateCpDots(true);
@@ -1547,11 +1513,10 @@ window.saveProfile = function() {
   localStorage.setItem('dc_name',myName);
   localStorage.setItem('dc_setup_done','1');
   if(myId) {
-    set(ref(db,`users/${myId}`),{ name:myName, online:true, ts:Date.now(), icon:myIcon, displayId: myDisplayId }).catch(()=>{});
+    set(ref(db,`users/${myId}`),{ name:myName, online:true, ts:Date.now(), icon:myIcon }).catch(()=>{});
   }
   showScreen('counter');
   initMain();
-  setTimeout(handleDeepLink, 1000);
 };
 
 // ===== MAIN INIT =====
@@ -1589,34 +1554,6 @@ function initMain() {
 
   // Notifications listener start karo
   setTimeout(()=>{ listenNotifications(); updateNotifBadge(); }, 1000);
-
-  // Firebase se userFollowing sync karo — logout-login ke baad fresh data aaye
-  setTimeout(()=>{ syncFollowingFromFirebase(); }, 1500);
-}
-
-// Firebase userFollowing se latest data pull karke local following sync karo
-async function syncFollowingFromFirebase() {
-  if(!myId) return;
-  try {
-    const snap = await get(ref(db, `userFollowing/${myId}`));
-    if(!snap.exists()) return;
-    let changed = false;
-    snap.forEach(child => {
-      const d = child.val();
-      if(!d || !child.key) return;
-      if(!following[child.key]) {
-        following[child.key] = { name: d.name || child.key, uid: child.key };
-        changed = true;
-      }
-    });
-    if(changed) {
-      localStorage.setItem('dc_following', JSON.stringify(following));
-      renderPeople();
-      renderChatList();
-      // Status listeners lagao naye friends ke liye
-      Object.keys(following).forEach(uid => listenUserStatus(uid));
-    }
-  } catch(e) { /* silently ignore */ }
 }
 
 function updateCountUI() {
@@ -1767,9 +1704,9 @@ function initFirebase() {
     localStorage.setItem('dc_my_id', myId);
   }
 
-  // Set online — displayId bhi store karo taaki search ho sake
+  // Set online
   const meRef=ref(db,`users/${myId}`);
-  set(meRef,{ name:myName, online:true, ts:Date.now(), icon:myIcon, displayId: myDisplayId });
+  set(meRef,{ name:myName, online:true, ts:Date.now(), icon:myIcon });
   onDisconnect(meRef).update({ online:false });
 
   // Listen for messages
@@ -2144,8 +2081,6 @@ function renderChatList() {
 }
 
 window.openChat=async function(uid,name) {
-  // Safety: agar myId nahi hai toh Firebase ready nahi
-  if(!myId){ toast('Please wait, loading...'); return; }
   // Block check — agar blocked hai toh chat nahi kholenge
   if(isBlocked(uid)){
     toast('You have blocked this user 🚫'); return;
@@ -2319,8 +2254,8 @@ window.renderNotifications = function() {
           <div class="notif-text"><strong>${escH(n.name)}</strong> sent you a follow request</div>
           <div class="notif-time">${timeAgo}</div>
           ${n.status==='pending' ? `<div class="notif-actions">
-            <button class="notif-accept-btn" onclick="acceptFollowRequest('${n.from}','${escH(n.name)}','${n.firebaseKey||n.id}')">✅ Accept</button>
-            <button class="notif-reject-btn" onclick="rejectFollowRequest('${n.from}','${escH(n.name)}','${n.firebaseKey||n.id}')">❌ Reject</button>
+            <button class="notif-accept-btn" onclick="acceptFollowRequest('${n.from}','${escH(n.name)}','${n.id}')">✅ Accept</button>
+            <button class="notif-reject-btn" onclick="rejectFollowRequest('${n.from}','${escH(n.name)}','${n.id}')">❌ Reject</button>
           </div>` : `<div style="font-size:12px;margin-top:6px;color:${n.status==='accepted'?'#4CAF50':'var(--chat-muted)'};">${n.status==='accepted'?'✅ Accepted':'❌ Rejected'}</div>`}
         </div>`;
     } else if(n.type === 'request_accepted') {
@@ -2378,69 +2313,40 @@ window.sendFollowRequest = async function(uid, name) {
   const blockedSnap = await get(ref(db, `blocked/${uid}/${myId}`));
   if(blockedSnap.val()) { toast('Cannot send request'); return; }
 
-  // MUTUAL AUTO-ADD: Agar B ne already A ko request bheji hai toh dono add ho jaao
-  const theirReqSnap = await get(ref(db, `followRequests/${myId}/${uid}`));
-  const theirReq = theirReqSnap.val();
-  if(theirReq && (theirReq.status === 'pending' || theirReq.status === 'accepted')) {
-    // Dono ko accept karo — mutual add
-    await _mutualAdd(uid, name, myId, myName);
-    toast('Dono add ho gaye! 🎉');
-    renderPeople();
-    renderChatList();
-    return;
-  }
-
-  // Save request in Firebase
+  // Save request in Firebase: followRequests/{toUid}/{fromUid}
   await set(ref(db, `followRequests/${uid}/${myId}`), {
     from: myId, name: myName, status: 'pending', ts: Date.now()
   });
-  // Send notification to receiver
+  // Send notification to receiver via Firebase
   await set(ref(db, `notifications/${uid}/${myId}_freq`), {
     type: 'follow_request', from: myId, name: myName,
     status: 'pending', ts: Date.now(), read: false
   });
   setRequestStatus(uid, 'sent');
-  toast('Follow request bhej di ✓');
+  toast('Follow request sent ✓');
   renderPeople();
   renderSearchResults_fromCache(uid, name);
 };
 
-// Dono ko ek saath add karo
-async function _mutualAdd(uidA, nameA, uidB, nameB) {
-  // Firebase mein dono taraf store karo
-  await set(ref(db, `followRequests/${uidB}/${uidA}/status`), 'accepted').catch(()=>{});
-  await set(ref(db, `followRequests/${uidA}/${uidB}/status`), 'accepted').catch(()=>{});
-  await set(ref(db, `userFollowing/${uidB}/${uidA}`), { name: nameA, uid: uidA, ts: Date.now() }).catch(()=>{});
-  await set(ref(db, `userFollowing/${uidA}/${uidB}`), { name: nameB, uid: uidB, ts: Date.now() }).catch(()=>{});
-
-  // LOCAL: Jo bhi hum hain (A ya B), apni following update karo
-  if(myId === uidB) {
-    // Main B hun — A ko apni list mein add karo
-    following[uidA] = { name: nameA, uid: uidA };
-    localStorage.setItem('dc_following', JSON.stringify(following));
-    listenUserStatus(uidA);
-  } else if(myId === uidA) {
-    // Main A hun — B ko apni list mein add karo
-    following[uidB] = { name: nameB, uid: uidB };
-    localStorage.setItem('dc_following', JSON.stringify(following));
-    listenUserStatus(uidB);
-  }
-
-  // Notify A that B accepted
-  await set(ref(db, `notifications/${uidA}/${uidB}_acc`), {
-    type: 'request_accepted', from: uidB, name: nameB, ts: Date.now(), read: false
-  }).catch(()=>{});
-}
-
 // ===== ACCEPT FOLLOW REQUEST =====
-window.acceptFollowRequest = async function(fromUid, fromName, notifKey) {
+window.acceptFollowRequest = async function(fromUid, fromName, notifId) {
   if(!myId) return;
-  await _mutualAdd(fromUid, fromName, myId, myName);
-  // Update local notif
+  // Update request status
+  await set(ref(db, `followRequests/${myId}/${fromUid}/status`), 'accepted');
+  // Add to following — uid field zaroori hai renderPeople ke liye
+  following[fromUid] = { name: fromName, uid: fromUid };
+  localStorage.setItem('dc_following', JSON.stringify(following));
+  // Listen to their online status
+  listenUserStatus(fromUid);
+  // Notify sender: request accepted
+  await set(ref(db, `notifications/${fromUid}/${myId}_acc`), {
+    type: 'request_accepted', from: myId, name: myName, ts: Date.now(), read: false
+  });
+  // Update local notif status
   const notifs = getNotifications();
-  const idx = notifs.findIndex(n => n.firebaseKey === notifKey || n.id === notifKey);
-  if(idx >= 0) { notifs[idx].status = 'accepted'; saveNotifications(notifs); }
-  toast(fromName + ' accepted ✅ — ab chat kar sakte ho!');
+  const idx = notifs.findIndex(n=>n.id===notifId||n.firebaseKey===notifId);
+  if(idx>=0) { notifs[idx].status='accepted'; saveNotifications(notifs); }
+  toast(fromName + ' accepted ✅');
   renderNotifications();
   renderPeople();
   renderChatList();
@@ -2528,18 +2434,6 @@ function listenNotifications() {
       filtered.unshift(notif);
       saveNotifications(filtered);
       updateNotifBadge();
-
-      // AUTO-ADD: jab request_accepted mile toh sender ko following mein add karo
-      if(d.type === 'request_accepted' && d.from) {
-        if(!following[d.from]) {
-          following[d.from] = { name: d.name || d.from, uid: d.from };
-          localStorage.setItem('dc_following', JSON.stringify(following));
-          listenUserStatus(d.from);
-          renderPeople();
-          renderChatList();
-          toast(escH(d.name||'User') + ' ab tumhara friend hai! 🎉');
-        }
-      }
     });
   });
 }
@@ -2587,44 +2481,32 @@ window.searchUser=function(val) {
   const res=document.getElementById('searchResults');
   if(!val||val.length<1) { res.innerHTML=''; _lastSearchUid=null; return; }
   if(val.length<6) { res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">Enter a 6-letter ID...</div>'; _lastSearchUid=null; return; }
-  if(val===myDisplayId) { res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">That\'s your own ID! 😄</div>'; return; }
+  if(val===myId) { res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">That\'s your own ID! 😄</div>'; return; }
 
   clearTimeout(_searchUserTimer);
   res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">🔍 Searching...</div>';
   _searchUserTimer = setTimeout(async ()=>{
     try {
-      // Safety check — agar _fbQueryFns ready nahi hai
-      if(!window._fbQueryFns) {
-        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:8px;">⚠️ App abhi load ho raha hai — thoda ruko phir try karo</div>';
-        return;
-      }
-      const { query: fbQuery, orderByChild, equalTo } = window._fbQueryFns;
-      const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),10000));
-      // Search by displayId field
-      const q = fbQuery(ref(db,'users'), orderByChild('displayId'), equalTo(val));
-      const snap = await Promise.race([get(q), timeoutPromise]);
+      const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000));
+      const snap = await Promise.race([get(ref(db,`users/${val}`)), timeoutPromise]);
       if(snap.exists()) {
-        let foundUid=null, foundUser=null;
-        snap.forEach(child=>{ foundUid=child.key; foundUser=child.val(); });
-        _lastSearchUid = foundUid; _lastSearchName = foundUser.name||foundUid;
-        searchUser_render(foundUid, foundUser.name||foundUid, foundUser.online);
+        const u=snap.val();
+        _lastSearchUid = val; _lastSearchName = u.name||val;
+        searchUser_render(val, u.name||val, u.online);
       } else {
         res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">❌ User not found — check the ID</div>';
         _lastSearchUid=null;
       }
     } catch(e) {
       if(e.message==='timeout') {
-        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:8px;">⚠️ Network slow hai — phir se try karo</div>';
-      } else if(e.code && e.code.includes('permission')) {
-        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:8px;">⚠️ Access denied — pehle login karo</div>';
+        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:8px;">⚠️ Network is slow — please try again</div>';
       } else {
-        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:8px;">⚠️ Kuch gadbad hui — phir se try karo</div>';
+        res.innerHTML='<div style="color:#f44336;font-size:12px;padding:8px;">⚠️ Something went wrong — try again</div>';
       }
       _lastSearchUid=null;
     }
   }, 400);
 };
-
 
 async function searchUser_render(uid, name, online) {
   const res=document.getElementById('searchResults');
@@ -2839,14 +2721,14 @@ function addMsg(text,from,name,time,msgId,replyData) {
       ${me?`<span class="msg-tick sent" id="tick-${msgId}"><span style="color:#666;font-size:12px;">✓</span></span>`:''}
     </div>`;
 
-  // Long press → context menu (apne msg pe) ya select mode
+  // Long press → context menu
   let lpTimer=null;
   let lpY=0;
   const onLpStart=(e)=>{
     lpY=e.touches?e.touches[0].clientY:e.clientY;
     lpTimer=setTimeout(()=>{
+      // isMe check: from===myId
       const isMine=from===myId;
-      if(_selectMode) return; // already in select mode
       _ctxMsg={text,id:msgId,src:null,isMe:isMine};
       showCtxMenu({text,id:msgId,isMe:isMine}, lpY, isMine);
     },500);
@@ -3101,7 +2983,7 @@ window.setMyIcon = function(n) {
 };
 
 function updateSettingsUI() {
-  const shortId = myDisplayId || '-';
+  const shortId = myId || '-';
   document.getElementById('settingsName').textContent=myName||'-';
   document.getElementById('settingsId').textContent='ID: '+shortId;
   document.getElementById('myIdDisplay').textContent=shortId;
@@ -3129,7 +3011,7 @@ window.searchUserFromSettings=function(val){
   const res=document.getElementById('settingsSearchResults');
   if(!val||val.length<1){ res.innerHTML=''; return; }
   if(val.length<6){ res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">Enter a 6-letter ID (e.g. AB12XY)...</div>'; return; }
-  if(val===myDisplayId){ res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">That is your own ID! 😄</div>'; return; }
+  if(val===myId){ res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">That is your own ID! 😄</div>'; return; }
 
   // Debounce — 400ms baad search karo
   clearTimeout(_settingsSearchTimer);
@@ -3180,9 +3062,8 @@ window.searchUserFromSettings=function(val){
 };
 
 window.copyMyId=function(){
-  const id = myDisplayId || myId;
-  if(!id) return;
-  navigator.clipboard.writeText(id).then(()=>toast('ID copied ✓')).catch(()=>toast('ID: '+id));
+  if(!myId) return;
+  navigator.clipboard.writeText(myId).then(()=>toast('ID copied ✓')).catch(()=>toast('ID: '+myId));
 };
 
 window.changePassword=function(){
@@ -3222,20 +3103,11 @@ window.editProfile=function(){
 };
 
 window.clearAllChats=function(){
-  if(confirm('Delete all chats? (Sirf local data clear hoga)')){
-    const chats=JSON.parse(localStorage.getItem('dc_chats')||'{}');
-    // Cache clear karo har chat ka
-    Object.keys(chats).forEach(uid=>{
-      if(myId){
-        const roomId=chatRoomId(myId,uid);
-        localStorage.removeItem('dc_msgcache_'+roomId);
-        _globalShownKeys.delete(roomId);
-      }
-      localStorage.removeItem('dc_hasunread_'+uid);
-    });
+  if(confirm('Delete all chats?')){
     localStorage.removeItem('dc_chats');
+    Object.keys(following).forEach(uid=>localStorage.removeItem('dc_hist_'+uid));
     renderChatList();
-    toast('All chats cleared ✓');
+    toast('All cleared ✓');
   }
 };
 
@@ -3352,13 +3224,10 @@ function showCtxMenu(data, touchY, isRight){
   const ctx=document.getElementById('msgContext');
   const dlItem=document.getElementById('ctxDlItem');
   const editItem=document.getElementById('ctxEditItem');
-  const deleteItem=document.getElementById('ctxDeleteItem');
   if(dlItem) dlItem.style.display=data.src?'flex':'none';
   // Show Edit only for own text messages
   if(editItem) editItem.style.display=(data.isMe && data.text)?'flex':'none';
-  // Show Delete for own messages only
-  if(deleteItem) deleteItem.style.display=data.isMe?'flex':'none';
-  const menuH=210;
+  const menuH=180;
   let top=touchY-menuH-10;
   if(top<10) top=touchY+10;
   ctx.style.top=top+'px';
@@ -3366,13 +3235,6 @@ function showCtxMenu(data, touchY, isRight){
   ctx.style.right=isRight?'12px':'auto';
   ctx.classList.add('show');
 }
-window.ctxDelete=function(){
-  if(!_ctxMsg||!_ctxMsg.id||!currentChatId) return;
-  document.getElementById('msgContext').classList.remove('show');
-  // Select mode start karo — user aur messages select kar sakta hai
-  const el = document.querySelector(`.msg-wrap[data-msgid="${_ctxMsg.id}"]`);
-  if(el) startSelectMode(_ctxMsg.id, el);
-};
 window.ctxReply=function(){
   if(_ctxMsg){replyTo={text:_ctxMsg.text||'',msgId:_ctxMsg.id};showReplyBar(_ctxMsg.text||'');}
   document.getElementById('msgContext').classList.remove('show');
@@ -3437,172 +3299,6 @@ document.addEventListener('click',e=>{
   }
 });
 
-// ===== QR CODE =====
-window.showQR = function() {
-  const id = myDisplayId || '-';
-  document.getElementById('qrIdLabel').textContent = id;
-  const modal = document.getElementById('qrModal');
-  modal.style.display = 'flex';
-  const container = document.getElementById('qrContainer');
-  container.innerHTML = '';
-  // QR library load karo
-  if(!window.QRCode) {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-    script.onload = () => _renderQR(container, id);
-    document.head.appendChild(script);
-  } else {
-    _renderQR(container, id);
-  }
-  modal.addEventListener('click', e => { if(e.target===modal) modal.style.display='none'; }, {once:true});
-};
-
-function _renderQR(container, id) {
-  const appUrl = window.location.origin + window.location.pathname;
-  const link = `${appUrl}?add=${id}`;
-  new QRCode(container, {
-    text: link,
-    width: 200, height: 200,
-    colorDark: '#1a0a00',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.M
-  });
-}
-
-// ===== SHARE LINK =====
-window.shareMyId = function() {
-  const id = myDisplayId || '-';
-  const appUrl = window.location.origin + window.location.pathname;
-  const link = `${appUrl}?add=${id}`;
-  const text = `Daily Chant pe mujhse connect karo!\nMera ID: ${id}\nLink: ${link}`;
-  if(navigator.share) {
-    navigator.share({ title: 'Daily Chant', text, url: link }).catch(()=>{});
-  } else {
-    navigator.clipboard.writeText(text).then(()=>toast('Link copied ✓')).catch(()=>toast('Link: '+link));
-  }
-};
-
-// ===== HANDLE ?add=XXXXXX DEEPLINK =====
-(function checkDeeplink() {
-  const params = new URLSearchParams(window.location.search);
-  const addId = params.get('add');
-  if(addId && addId.length >= 6) {
-    window._deepLinkAddId = addId.trim().toUpperCase().slice(0,6);
-    try { window.history.replaceState({}, '', window.location.pathname); } catch(e) {}
-  }
-})();
-
-function handleDeepLink() {
-  if(!window._deepLinkAddId) return;
-
-  // myId ready nahi — retry
-  if(!myId) { setTimeout(handleDeepLink, 600); return; }
-
-  // App fully init nahi hua — retry
-  if(!_initMainDone) { setTimeout(handleDeepLink, 600); return; }
-
-  const addId = window._deepLinkAddId;
-  window._deepLinkAddId = null;
-
-  // People screen pe le jao
-  showScreen('peopleScreen');
-
-  // Search bar fill karo aur search trigger karo
-  setTimeout(() => {
-    const bar = document.getElementById('searchBar');
-    if(bar) { bar.value = addId; }
-    window.searchUser(addId);
-    toast('🔍 ' + addId + ' dhoondh raha hai...');
-  }, 400);
-}
-
-// ===== MULTI-SELECT MESSAGE DELETE =====
-let _selectMode = false;
-let _selectedMsgIds = new Set();
-
-// Long press pe select mode ON karo (pehla message auto-select)
-function startSelectMode(msgId, msgWrap) {
-  _selectMode = true;
-  _selectedMsgIds.clear();
-  _selectedMsgIds.add(msgId);
-  msgWrap.style.outline = '2px solid var(--chat-accent)';
-  msgWrap.style.borderRadius = '18px';
-  msgWrap.style.opacity = '0.75';
-  // Sare messages pe click listener lagao
-  document.querySelectorAll('.msg-wrap[data-msgid]').forEach(w => {
-    w.style.cursor = 'pointer';
-    w.addEventListener('click', _onMsgSelectClick);
-  });
-  // Delete bar dikhao
-  _showSelectBar();
-  toast('Messages select karo, phir Delete tap karo');
-}
-
-function _showSelectBar() {
-  let bar = document.getElementById('selectDeleteBar');
-  if(!bar) {
-    bar = document.createElement('div');
-    bar.id = 'selectDeleteBar';
-    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(20,20,20,0.97);border-top:1px solid #ff4444;padding:12px 16px max(20px,env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;z-index:300;';
-    bar.innerHTML = `<button onclick="cancelSelectMode()" style="background:none;border:1px solid var(--chat-border);color:var(--chat-muted);border-radius:20px;padding:8px 16px;font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif;">✕ Cancel</button>
-    <span id="selectCount" style="font-size:13px;color:var(--chat-text);font-weight:600;">1 selected</span>
-    <button onclick="deleteSelectedMsgs()" style="background:#ff4444;border:none;color:#fff;border-radius:20px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">🗑️ Delete</button>`;
-    document.body.appendChild(bar);
-  }
-  bar.style.display = 'flex';
-  _updateSelectCount();
-}
-
-function _updateSelectCount() {
-  const el = document.getElementById('selectCount');
-  if(el) el.textContent = _selectedMsgIds.size + ' selected';
-}
-
-function _onMsgSelectClick(e) {
-  if(!_selectMode) return;
-  e.stopPropagation();
-  const msgId = this.dataset.msgid;
-  if(!msgId) return;
-  if(_selectedMsgIds.has(msgId)) {
-    _selectedMsgIds.delete(msgId);
-    this.style.outline = '';
-    this.style.opacity = '1';
-  } else {
-    _selectedMsgIds.add(msgId);
-    this.style.outline = '2px solid var(--chat-accent)';
-    this.style.opacity = '0.75';
-    this.style.borderRadius = '18px';
-  }
-  _updateSelectCount();
-}
-
-window.cancelSelectMode = function() {
-  _selectMode = false;
-  _selectedMsgIds.clear();
-  document.querySelectorAll('.msg-wrap[data-msgid]').forEach(w => {
-    w.style.cursor = '';
-    w.style.opacity = '1';
-    w.style.outline = '';
-    w.removeEventListener('click', _onMsgSelectClick);
-  });
-  const bar = document.getElementById('selectDeleteBar');
-  if(bar) bar.style.display = 'none';
-};
-
-window.deleteSelectedMsgs = async function() {
-  if(_selectedMsgIds.size === 0) { toast('Koi message select nahi'); return; }
-  if(!confirm(`${_selectedMsgIds.size} message(s) delete karo?`)) return;
-  const roomId = chatRoomId(myId, currentChatId);
-  const ids = [..._selectedMsgIds];
-  cancelSelectMode();
-  for(const msgId of ids) {
-    remove(ref(db, `chats/${roomId}/messages/${msgId}`)).catch(()=>{});
-    const el = document.querySelector(`.msg-wrap[data-msgid="${msgId}"]`);
-    if(el) el.remove();
-  }
-  toast(`${ids.length} message(s) delete ho gaye ✓`);
-};
-
 // ===== CHAT INFO =====
 window.openChatInfo=function(){
   if(!currentChatId) return;
@@ -3618,12 +3314,9 @@ function handleAuthUser(user) {
 
   if(!user) { showScreen('googleLogin'); return; }
 
-  const fullUid = user.uid;
   const shortId = user.uid.substr(0,6).toUpperCase();
-  myId = fullUid; // Full UID — Firebase rules ke liye
-  myDisplayId = shortId; // 6-char — display aur search ke liye
-  localStorage.setItem('dc_my_id', fullUid);
-  localStorage.setItem('dc_my_display_id', shortId);
+  myId = shortId;
+  localStorage.setItem('dc_my_id', shortId);
 
   // Name Google se lo agar missing hai
   if(!myName && user.displayName) {
@@ -3636,20 +3329,10 @@ function handleAuthUser(user) {
   const uidSetup  = localStorage.getItem('dc_setup_done_'+shortId);
   const uidName   = localStorage.getItem('dc_name_'+shortId);
   const uidAvatar = localStorage.getItem('dc_avatar_'+shortId);
-  const uidFollowing = localStorage.getItem('dc_following_'+shortId);
-  const uidChats = localStorage.getItem('dc_chats_'+shortId);
-  const uidBlocked = localStorage.getItem('dc_blocked_'+shortId);
-  const uidBlockedData = localStorage.getItem('dc_blocked_data_'+shortId);
-  const uidReqstatus = localStorage.getItem('dc_reqstatus_'+shortId);
   if(uidPass   && !localStorage.getItem('dc_pass'))       localStorage.setItem('dc_pass', uidPass);
   if(uidSetup  && !localStorage.getItem('dc_setup_done')) localStorage.setItem('dc_setup_done','1');
   if(uidName   && !localStorage.getItem('dc_name'))       { localStorage.setItem('dc_name', uidName); myName=uidName; }
   if(uidAvatar && !localStorage.getItem('dc_avatar'))     { localStorage.setItem('dc_avatar', uidAvatar); myAvatar=uidAvatar; }
-  if(uidFollowing && !localStorage.getItem('dc_following')) localStorage.setItem('dc_following', uidFollowing);
-  if(uidChats && !localStorage.getItem('dc_chats')) localStorage.setItem('dc_chats', uidChats);
-  if(uidBlocked && !localStorage.getItem('dc_blocked')) localStorage.setItem('dc_blocked', uidBlocked);
-  if(uidBlockedData && !localStorage.getItem('dc_blocked_data')) localStorage.setItem('dc_blocked_data', uidBlockedData);
-  if(uidReqstatus && !localStorage.getItem('dc_reqstatus')) localStorage.setItem('dc_reqstatus', uidReqstatus);
 
   const savedPass = localStorage.getItem('dc_pass');
   const setupDone = localStorage.getItem('dc_setup_done');
@@ -3660,7 +3343,6 @@ function handleAuthUser(user) {
   migratePasswordIfNeeded().then(()=>{
     showScreen('counter');
     initMain();
-    setTimeout(handleDeepLink, 2000);
   });
 }
 
@@ -3669,7 +3351,6 @@ function startApp() {
   const savedAvatar=localStorage.getItem('dc_avatar');
   if(savedName) myName=savedName;
   if(savedAvatar) myAvatar=savedAvatar;
-  myDisplayId = localStorage.getItem('dc_my_display_id') || null;
 
   const nav=document.getElementById('bottomNav');
   if(nav) nav.style.display='none';
