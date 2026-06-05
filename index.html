@@ -936,7 +936,6 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
   <div class="people-header">
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <div class="people-title">People</div>
-      <button onclick="openQrScanner()" style="background:rgba(255,107,0,0.15);border:1.5px solid rgba(255,107,0,0.4);color:var(--chat-accent);border-radius:14px;padding:7px 13px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;display:flex;align-items:center;gap:6px;">📷 Scan</button>
     </div>
     <div style="font-size:11px;color:var(--chat-muted);margin:4px 0 6px;">Find your ID in Settings → Share with friends → They search and follow you here</div>
     <input class="search-bar" id="searchBar" placeholder="🔍 Enter friend's 6-letter ID (e.g. AB12XY)..." 
@@ -964,7 +963,6 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
       <div id="myIdDisplay" onclick="copyMyId()" style="font-size:36px;font-weight:700;color:var(--chat-accent);letter-spacing:8px;text-shadow:0 0 20px rgba(255,107,0,0.3);cursor:pointer;">-</div>
       <div style="font-size:10px;color:rgba(255,107,0,0.5);margin-top:8px;margin-bottom:14px;">📋 Tap ID to copy</div>
       <div style="display:flex;gap:8px;justify-content:center;">
-        <button onclick="showQR()" style="flex:1;padding:10px;border-radius:14px;border:1.5px solid rgba(255,107,0,0.4);background:rgba(255,107,0,0.1);color:var(--chat-accent);font-size:13px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">📷 QR Code</button>
         <button onclick="shareMyId()" style="flex:1;padding:10px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--chat-accent),#ff8c00);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">🔗 Share Link</button>
       </div>
     </div>
@@ -1177,40 +1175,6 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 <input type="file" id="cameraInput" onchange="sendFile(this)" accept="image/*" capture="environment">
 <input type="file" id="avatarInput" accept="image/*" onchange="setAvatar(this)">
 <!-- QR SCANNER MODAL -->
-<div id="qrScannerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.97);z-index:700;flex-direction:column;align-items:center;justify-content:center;">
-  <div style="width:100%;max-width:360px;padding:0 20px;text-align:center;">
-    <div style="font-size:17px;font-weight:700;color:var(--chat-accent);margin-bottom:3px;">📷 QR Scanner</div>
-    <div style="font-size:12px;color:var(--chat-muted);margin-bottom:14px;">Friend ka QR Code scan karo</div>
-
-    <!-- Camera view -->
-    <div id="qrCameraWrap" style="position:relative;border-radius:20px;overflow:hidden;background:#111;aspect-ratio:1;display:none;">
-      <video id="qrVideo" style="width:100%;height:100%;object-fit:cover;" autoplay muted playsinline webkit-playsinline></video>
-      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
-        <div style="width:62%;height:62%;position:relative;">
-          <div style="position:absolute;top:0;left:0;width:26px;height:26px;border-top:3px solid var(--chat-accent);border-left:3px solid var(--chat-accent);border-radius:3px 0 0 0;"></div>
-          <div style="position:absolute;top:0;right:0;width:26px;height:26px;border-top:3px solid var(--chat-accent);border-right:3px solid var(--chat-accent);border-radius:0 3px 0 0;"></div>
-          <div style="position:absolute;bottom:0;left:0;width:26px;height:26px;border-bottom:3px solid var(--chat-accent);border-left:3px solid var(--chat-accent);border-radius:0 0 0 3px;"></div>
-          <div style="position:absolute;bottom:0;right:0;width:26px;height:26px;border-bottom:3px solid var(--chat-accent);border-right:3px solid var(--chat-accent);border-radius:0 0 3px 0;"></div>
-          <div id="qrScanLine" style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--chat-accent),transparent);animation:qrScan 2s linear infinite;"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Status / icon shown when no camera yet -->
-    <div id="qrIconWrap" style="font-size:64px;margin:10px 0 6px;">📷</div>
-
-    <div id="qrScanStatus" style="margin-top:10px;font-size:13px;color:var(--chat-muted);min-height:36px;line-height:1.6;">Shuru ho raha hai...</div>
-
-    <!-- Buttons row -->
-    <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;">
-      <button id="qrGalleryBtn" onclick="_pickQrFromGallery()" style="width:100%;padding:14px;border-radius:16px;border:none;background:linear-gradient(135deg,var(--chat-accent),#ff8c00);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">🖼️ Gallery se Scan karo</button>
-      <button onclick="closeQrScanner()" style="width:100%;padding:13px;border-radius:16px;border:1px solid var(--chat-border);background:var(--chat-surface);color:var(--chat-muted);font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif;">✕ Band Karo</button>
-    </div>
-  </div>
-</div>
-<style>
-@keyframes qrScan { 0%{top:0%} 100%{top:calc(100% - 2px)} }
-</style>
 
 <!-- QR CODE MODAL -->
 <div id="qrModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:600;align-items:center;justify-content:center;">
@@ -1625,6 +1589,34 @@ function initMain() {
 
   // Notifications listener start karo
   setTimeout(()=>{ listenNotifications(); updateNotifBadge(); }, 1000);
+
+  // Firebase se userFollowing sync karo — logout-login ke baad fresh data aaye
+  setTimeout(()=>{ syncFollowingFromFirebase(); }, 1500);
+}
+
+// Firebase userFollowing se latest data pull karke local following sync karo
+async function syncFollowingFromFirebase() {
+  if(!myId) return;
+  try {
+    const snap = await get(ref(db, `userFollowing/${myId}`));
+    if(!snap.exists()) return;
+    let changed = false;
+    snap.forEach(child => {
+      const d = child.val();
+      if(!d || !child.key) return;
+      if(!following[child.key]) {
+        following[child.key] = { name: d.name || child.key, uid: child.key };
+        changed = true;
+      }
+    });
+    if(changed) {
+      localStorage.setItem('dc_following', JSON.stringify(following));
+      renderPeople();
+      renderChatList();
+      // Status listeners lagao naye friends ke liye
+      Object.keys(following).forEach(uid => listenUserStatus(uid));
+    }
+  } catch(e) { /* silently ignore */ }
 }
 
 function updateCountUI() {
@@ -2415,14 +2407,25 @@ window.sendFollowRequest = async function(uid, name) {
 
 // Dono ko ek saath add karo
 async function _mutualAdd(uidA, nameA, uidB, nameB) {
-  // A → B
-  following[uidA] = { name: nameA, uid: uidA };
-  localStorage.setItem('dc_following', JSON.stringify(following));
-  listenUserStatus(uidA);
+  // Firebase mein dono taraf store karo
   await set(ref(db, `followRequests/${uidB}/${uidA}/status`), 'accepted').catch(()=>{});
   await set(ref(db, `followRequests/${uidA}/${uidB}/status`), 'accepted').catch(()=>{});
   await set(ref(db, `userFollowing/${uidB}/${uidA}`), { name: nameA, uid: uidA, ts: Date.now() }).catch(()=>{});
   await set(ref(db, `userFollowing/${uidA}/${uidB}`), { name: nameB, uid: uidB, ts: Date.now() }).catch(()=>{});
+
+  // LOCAL: Jo bhi hum hain (A ya B), apni following update karo
+  if(myId === uidB) {
+    // Main B hun — A ko apni list mein add karo
+    following[uidA] = { name: nameA, uid: uidA };
+    localStorage.setItem('dc_following', JSON.stringify(following));
+    listenUserStatus(uidA);
+  } else if(myId === uidA) {
+    // Main A hun — B ko apni list mein add karo
+    following[uidB] = { name: nameB, uid: uidB };
+    localStorage.setItem('dc_following', JSON.stringify(following));
+    listenUserStatus(uidB);
+  }
+
   // Notify A that B accepted
   await set(ref(db, `notifications/${uidA}/${uidB}_acc`), {
     type: 'request_accepted', from: uidB, name: nameB, ts: Date.now(), read: false
@@ -2622,141 +2625,6 @@ window.searchUser=function(val) {
   }, 400);
 };
 
-// ===== QR CODE SCANNER =====
-let _qrStream = null;
-let _qrInterval = null;
-let _qrScanned = false;
-
-function _setQrStatus(msg, color) {
-  const el = document.getElementById('qrScanStatus');
-  if(el) { el.innerHTML = msg; el.style.color = color || 'var(--chat-muted)'; }
-}
-
-// Extract 6-char user ID from any QR data string
-function _extractIdFromQr(data) {
-  if(!data) return null;
-  let id = null;
-  try {
-    const url = new URL(data);
-    // Check all common param names
-    id = url.searchParams.get('add') || url.searchParams.get('id') || url.searchParams.get('user');
-    if(!id) id = url.hash.replace(/^#\/?/,'');
-  } catch(e) {}
-  if(id) { id = id.trim().toUpperCase().replace(/[^A-Z0-9]/g,''); }
-  if(id && id.length === 6) return id;
-  // Plain string — find any 6-char alphanumeric token
-  const upper = data.toUpperCase();
-  const tokens = upper.split(/[^A-Z0-9]+/);
-  for(const t of tokens) { if(t.length === 6) return t; }
-  const m = upper.match(/[A-Z0-9]{6}/);
-  return m ? m[0] : null;
-}
-
-window.openQrScanner = async function() {
-  _qrScanned = false;
-  document.getElementById('qrScannerModal').style.display = 'flex';
-  document.getElementById('qrCameraWrap').style.display = 'none';
-  document.getElementById('qrIconWrap').style.display = 'block';
-  _setQrStatus('Camera access maang raha hai...', 'var(--chat-muted)');
-
-  // Try camera + BarcodeDetector
-  const hasBD = 'BarcodeDetector' in window;
-
-  if(!hasBD) {
-    _setQrStatus('⚠️ Is device pe live scanner nahi chala.<br>Neeche <b style="color:var(--chat-accent)">Gallery se Scan karo</b> tap karo', '#ffaa00');
-    return;
-  }
-
-  try {
-    _qrStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } }
-    });
-  } catch(e) {
-    let msg = '❌ Camera nahi khula.';
-    if(e.name === 'NotAllowedError') msg = '❌ Camera permission denied.<br><small>Browser settings mein camera allow karo, ya Gallery option use karo.</small>';
-    else if(e.name === 'NotFoundError') msg = '❌ Camera nahi mila. Gallery se scan karo.';
-    _setQrStatus(msg, '#f44336');
-    return;
-  }
-
-  // Camera open — show video
-  const video = document.getElementById('qrVideo');
-  video.srcObject = _qrStream;
-  try { await video.play(); } catch(e) {}
-  document.getElementById('qrCameraWrap').style.display = 'block';
-  document.getElementById('qrIconWrap').style.display = 'none';
-  _setQrStatus('📷 QR Code frame ke beech mein rakho...', 'var(--chat-muted)');
-
-  let detector;
-  try { detector = new BarcodeDetector({ formats: ['qr_code'] }); }
-  catch(e) { detector = new BarcodeDetector(); }
-
-  _qrInterval = setInterval(async () => {
-    if(_qrScanned) return;
-    if(!video || video.readyState < 2 || video.paused || video.ended) return;
-    try {
-      const codes = await detector.detect(video);
-      if(codes && codes.length > 0) {
-        _qrScanned = true;
-        clearInterval(_qrInterval); _qrInterval = null;
-        _handleQrResult(codes[0].rawValue);
-      }
-    } catch(e) {}
-  }, 350);
-};
-
-// Gallery picker — works on ALL devices / browsers
-window._pickQrFromGallery = function() {
-  const inp = document.createElement('input');
-  inp.type = 'file'; inp.accept = 'image/*';
-  inp.style.display = 'none';
-  document.body.appendChild(inp);
-  inp.onchange = async (e) => {
-    const file = e.target.files && e.target.files[0];
-    inp.remove();
-    if(!file) return;
-    _setQrStatus('🔍 Image scan ho rahi hai...', 'var(--chat-muted)');
-    try {
-      const bitmap = await createImageBitmap(file);
-      if('BarcodeDetector' in window) {
-        const detector = new BarcodeDetector({ formats: ['qr_code'] });
-        const codes = await detector.detect(bitmap);
-        if(codes && codes.length > 0) { _handleQrResult(codes[0].rawValue); return; }
-      }
-      // Canvas fallback read (no library — just show failure)
-      _setQrStatus('❌ QR code nahi mila image mein.<br><small>Clear photo lo aur try karo</small>', '#f44336');
-    } catch(err) {
-      _setQrStatus('❌ Image read nahi hui — dobara try karo', '#f44336');
-    }
-  };
-  inp.click();
-};
-
-function _handleQrResult(raw) {
-  const id = _extractIdFromQr(raw);
-  if(!id) {
-    _setQrStatus('⚠️ Valid 6-char ID nahi mili QR mein — dobara try karo', '#ffaa00');
-    _qrScanned = false;
-    return;
-  }
-  closeQrScanner();
-  showScreen('peopleScreen');
-  setTimeout(() => {
-    const bar = document.getElementById('searchBar');
-    if(bar) { bar.value = id; }
-    window.searchUser(id);
-    toast('🎯 ID mili: ' + id);
-  }, 300);
-}
-
-window.closeQrScanner = function() {
-  _qrScanned = false;
-  clearInterval(_qrInterval); _qrInterval = null;
-  if(_qrStream) { _qrStream.getTracks().forEach(t => t.stop()); _qrStream = null; }
-  const v = document.getElementById('qrVideo');
-  if(v) v.srcObject = null;
-  document.getElementById('qrScannerModal').style.display = 'none';
-};
 
 async function searchUser_render(uid, name, online) {
   const res=document.getElementById('searchResults');
