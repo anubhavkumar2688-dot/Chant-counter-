@@ -1526,6 +1526,7 @@ async function checkCpPin() {
         showScreen('chatsListScreen'); renderChatList();
       } else {
         showScreen('counter'); initMain();
+        setTimeout(handleDeepLink, 800);
       }
     } else {
       updateCpDots(true);
@@ -1586,6 +1587,7 @@ window.saveProfile = function() {
   }
   showScreen('counter');
   initMain();
+  setTimeout(handleDeepLink, 1000);
 };
 
 // ===== MAIN INIT =====
@@ -3588,17 +3590,27 @@ window.shareMyId = function() {
   const addId = params.get('add');
   if(addId && addId.length===6) {
     window._deepLinkAddId = addId.toUpperCase();
+    // URL clean karo taaki reload pe dobara na chale
+    try { window.history.replaceState({}, '', window.location.pathname); } catch(e) {}
   }
 })();
 
 function handleDeepLink() {
-  if(!window._deepLinkAddId || !myId) return;
+  if(!window._deepLinkAddId) return;
+  if(!myId) {
+    // myId abhi ready nahi — thoda aur wait karo
+    setTimeout(handleDeepLink, 800);
+    return;
+  }
   const addId = window._deepLinkAddId;
   window._deepLinkAddId = null;
-  // Search karo aur People screen pe dikhao
   showScreen('peopleScreen');
-  const bar = document.getElementById('searchBar');
-  if(bar) { bar.value = addId; searchUser(addId); }
+  setTimeout(() => {
+    const bar = document.getElementById('searchBar');
+    if(bar) { bar.value = addId; }
+    window.searchUser(addId);
+    toast('🔍 ' + addId + ' search ho raha hai...');
+  }, 300);
 }
 
 // ===== MULTI-SELECT MESSAGE DELETE =====
@@ -3745,7 +3757,7 @@ function handleAuthUser(user) {
   migratePasswordIfNeeded().then(()=>{
     showScreen('counter');
     initMain();
-    setTimeout(handleDeepLink, 1500);
+    setTimeout(handleDeepLink, 2000);
   });
 }
 
