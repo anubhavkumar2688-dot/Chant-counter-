@@ -2581,95 +2581,173 @@ window.searchUser=function(val) {
   }, 400);
 };
 
-// ===== QR CODE SCANNER =====
+// ===== QR CODE SCANNER — BarcodeDetector (native, no library) =====
 let _qrStream = null;
 let _qrInterval = null;
-let _qrJsLib = null;
+let _qrDetector = null;
+let _qrScanned = false;
+
+// Extract 6-char user ID from any QR data string
+function _extractIdFromQr(data) {
+  if(!data) return null;
+  let id = null;
+  // Try URL params: ?add=XXXXXX or ?id=XXXXXX or ?user=XXXXXX or #XXXXXX
+  try {
+    const url = new URL(data);
+    id = url.searchParams.get('add') || url.searchParams.get('id') || url.searchParams.get('user') || url.hash.replace('#','');
+  } catch(e) {}
+  // Clean up
+  if(id) id = id.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(id && id.length === 6) return id;
+  // Try: any 6 alphanumeric word in the string
+  const upper = data.toUpperCase().replace(/[^A-Z0-9]/g,' ').trim();
+  const parts = upper.split(/\s+/);
+  for(const p of parts) {
+    if(p.length === 6) return p;
+  }
+  // Try regex match
+  const m = upper.match(/([A-Z0-9]{6})/);
+  return m ? m[1] : null;
+}
 
 window.openQrScanner = async function() {
+  _qrScanned = false;
   const modal = document.getElementById('qrScannerModal');
   modal.style.display = 'flex';
   const status = document.getElementById('qrScanStatus');
+
+  // Check BarcodeDetector support
+  if(!('BarcodeDetector' in window)) {
+    // Fallback: show gallery picker
+    status.innerHTML = '⚠️ Camera scanner is nahi chala — <br><strong style="color:var(--chat-accent)">Gallery se QR image choose karo</strong>';
+    status.style.color = '#ffaa00';
+    // Show a pick-from-gallery button
+    let galleryBtn = document.getElementById('qrGalleryFallbackBtn');
+    if(!galleryBtn) {
+      galleryBtn = document.createElement('button');
+      galleryBtn.id = 'qrGalleryFallbackBtn';
+      galleryBtn.textContent = '🖼️ Gallery se Scan karo';
+      galleryBtn.style.cssText = 'margin-top:12px;width:100%;padding:14px;border-radius:16px;border:none;background:linear-gradient(135deg,var(--chat-accent),#ff8c00);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:\'Poppins\',sans-serif;';
+      galleryBtn.onclick = _pickQrFromGallery;
+      status.parentNode.insertBefore(galleryBtn, document.getElementById('qrScanStatus').nextSibling);
+    }
+    galleryBtn.style.display = 'block';
+    // Hide video frame
+    const videoWrap = document.querySelector('#qrScannerModal [style*="aspect-ratio"]');
+    if(videoWrap) videoWrap.style.display = 'none';
+    return;
+  }
+
+  // BarcodeDetector available
+  try {
+    _qrDetector = new BarcodeDetector({ formats: ['qr_code'] });
+  } catch(e) {
+    _qrDetector = new BarcodeDetector(); // fallback without format hint
+  }
+
+  // Show video frame
+  const videoWrap = document.querySelector('#qrScannerModal [style*="aspect-ratio"]');
+  if(videoWrap) videoWrap.style.display = 'block';
+  const galleryBtn = document.getElementById('qrGalleryFallbackBtn');
+  if(galleryBtn) galleryBtn.style.display = 'none';
+
   status.textContent = 'Camera khol raha hai...';
   status.style.color = 'var(--chat-muted)';
 
-  // Load jsQR library if not loaded
-  if(!window.jsQR) {
-    try {
-      await new Promise((res, rej) => {
-        const s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';
-        s.onload = res; s.onerror = rej;
-        document.head.appendChild(s);
-      });
-    } catch(e) {
-      status.textContent = '❌ Scanner load nahi hua — internet check karo';
-      status.style.color = '#f44336';
-      return;
-    }
-  }
-
   try {
     _qrStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 640 } }
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
     });
     const video = document.getElementById('qrVideo');
     video.srcObject = _qrStream;
     await video.play();
-    status.textContent = '📷 QR Code dikhao...';
+    status.textContent = '📷 QR Code frame ke andar rakho...';
+    status.style.color = 'var(--chat-muted)';
 
-    _qrInterval = setInterval(() => {
+    // Scan loop using BarcodeDetector
+    _qrInterval = setInterval(async () => {
+      if(_qrScanned) return;
       const video = document.getElementById('qrVideo');
-      const canvas = document.getElementById('qrCanvas');
-      if(!video || video.readyState !== video.HAVE_ENOUGH_DATA) return;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      if(!video || video.readyState < 2 || video.paused) return;
       try {
-        const code = window.jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
-        if(code && code.data) {
-          _handleQrResult(code.data);
+        const barcodes = await _qrDetector.detect(video);
+        if(barcodes && barcodes.length > 0) {
+          const raw = barcodes[0].rawValue;
+          _qrScanned = true;
+          _handleQrResult(raw);
         }
       } catch(e) {}
-    }, 250);
+    }, 300);
+
   } catch(e) {
     if(e.name === 'NotAllowedError') {
-      status.textContent = '❌ Camera permission do — settings mein jao';
+      status.innerHTML = '❌ Camera permission nahi mila<br><small style="color:var(--chat-muted)">Browser settings mein camera allow karo</small>';
     } else if(e.name === 'NotFoundError') {
-      status.textContent = '❌ Camera nahi mila device pe';
+      status.textContent = '❌ Koi camera nahi mila is device pe';
     } else {
-      status.textContent = '❌ Camera nahi khula — try again';
+      status.textContent = '❌ Camera nahi khula — dobara try karo';
     }
     status.style.color = '#f44336';
   }
 };
 
-function _handleQrResult(data) {
-  // Extract 6-char ID from URL like https://.../?id=XXXXXX or just plain XXXXXX
-  let id = null;
-  try {
-    const url = new URL(data);
-    id = url.searchParams.get('id') || url.searchParams.get('user');
-  } catch(e) {}
-  if(!id) {
-    // Maybe it's a plain 6-char ID
-    const match = data.trim().toUpperCase().match(/\b([A-Z0-9]{6})\b/);
-    if(match) id = match[1];
-  }
-  if(!id || id.length !== 6) return;
+// Gallery picker fallback — works on all devices
+function _pickQrFromGallery() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*';
+  inp.onchange = async (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const status = document.getElementById('qrScanStatus');
+    status.textContent = 'Scan ho raha hai...';
+    status.style.color = 'var(--chat-muted)';
+    try {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      await new Promise(r => img.onload = r);
+      if('BarcodeDetector' in window) {
+        const detector = new BarcodeDetector({ formats: ['qr_code'] });
+        const codes = await detector.detect(img);
+        if(codes && codes.length > 0) {
+          _handleQrResult(codes[0].rawValue);
+          return;
+        }
+      }
+      status.textContent = '❌ QR code nahi mila image mein';
+      status.style.color = '#f44336';
+    } catch(e) {
+      status.textContent = '❌ Image scan nahi hui — dobara try karo';
+      status.style.color = '#f44336';
+    }
+  };
+  inp.click();
+}
 
+function _handleQrResult(data) {
+  const id = _extractIdFromQr(data);
+  if(!id) {
+    const status = document.getElementById('qrScanStatus');
+    if(status) { status.textContent = '⚠️ Valid ID nahi mili QR mein — dobara try karo'; status.style.color = '#ffaa00'; }
+    _qrScanned = false;
+    return;
+  }
   closeQrScanner();
-  toast('ID mila: ' + id + ' 🎯');
-  // Fill in the search bar and trigger search
-  const bar = document.getElementById('searchBar');
-  if(bar) { bar.value = id; searchUser(id); }
-  // Make sure people screen is visible
+  // Navigate to people screen first
   showScreen('peopleScreen');
+  // Small delay so screen renders first
+  setTimeout(() => {
+    const bar = document.getElementById('searchBar');
+    if(bar) {
+      bar.value = id;
+      bar.dispatchEvent(new Event('input')); // trigger oninput
+    }
+    window.searchUser(id);
+    toast('🎯 ID mili: ' + id + ' — search ho raha hai!');
+  }, 200);
 }
 
 window.closeQrScanner = function() {
+  _qrScanned = false;
   clearInterval(_qrInterval); _qrInterval = null;
   if(_qrStream) { _qrStream.getTracks().forEach(t => t.stop()); _qrStream = null; }
   const video = document.getElementById('qrVideo');
