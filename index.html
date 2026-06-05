@@ -911,8 +911,6 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
       <div class="chat-hst" id="chatStatus">...</div>
     </div>
     <div class="chat-hacts">
-      <div class="chat-icon-btn" id="selectModeBtn" onclick="toggleSelectMode()" title="Select Messages" style="display:none;">☑️</div>
-      <div class="chat-icon-btn" id="deleteSelectedBtn" onclick="deleteSelectedMsgs()" title="Delete Selected" style="display:none;background:rgba(255,68,68,0.2);border-color:#ff4444;">🗑️</div>
       <div class="chat-icon-btn" onclick="refreshChat()" title="Refresh">🔄</div>
     </div>
   </div>
@@ -957,11 +955,15 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
   </div>
   <div class="settings-body">
     <!-- ID Card - TOP -->
-    <div style="background:linear-gradient(135deg,#1c1000,#2d1800,#1c1000);border:1.5px solid rgba(255,107,0,0.5);border-radius:20px;padding:20px;margin-bottom:14px;text-align:center;box-shadow:0 6px 24px rgba(255,107,0,0.15);position:relative;overflow:hidden;" onclick="copyMyId()">
+    <div style="background:linear-gradient(135deg,#1c1000,#2d1800,#1c1000);border:1.5px solid rgba(255,107,0,0.5);border-radius:20px;padding:20px;margin-bottom:14px;text-align:center;box-shadow:0 6px 24px rgba(255,107,0,0.15);position:relative;overflow:hidden;">
       <div style="position:absolute;right:-10px;bottom:-15px;font-size:80px;opacity:0.06;font-family:serif;pointer-events:none;">ॐ</div>
       <div style="font-size:10px;color:rgba(255,107,0,0.7);letter-spacing:3px;margin-bottom:8px;font-weight:600;">MY ID — SHARE WITH FRIENDS</div>
-      <div id="myIdDisplay" style="font-size:36px;font-weight:700;color:var(--chat-accent);letter-spacing:8px;text-shadow:0 0 20px rgba(255,107,0,0.3);">-</div>
-      <div style="font-size:10px;color:rgba(255,107,0,0.5);margin-top:8px;display:flex;align-items:center;justify-content:center;gap:4px;">📋 Tap to copy</div>
+      <div id="myIdDisplay" onclick="copyMyId()" style="font-size:36px;font-weight:700;color:var(--chat-accent);letter-spacing:8px;text-shadow:0 0 20px rgba(255,107,0,0.3);cursor:pointer;">-</div>
+      <div style="font-size:10px;color:rgba(255,107,0,0.5);margin-top:8px;margin-bottom:14px;">📋 Tap ID to copy</div>
+      <div style="display:flex;gap:8px;justify-content:center;">
+        <button onclick="showQR()" style="flex:1;padding:10px;border-radius:14px;border:1.5px solid rgba(255,107,0,0.4);background:rgba(255,107,0,0.1);color:var(--chat-accent);font-size:13px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">📷 QR Code</button>
+        <button onclick="shareMyId()" style="flex:1;padding:10px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--chat-accent),#ff8c00);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">🔗 Share Link</button>
+      </div>
     </div>
 
     <!-- Profile card -->
@@ -1171,6 +1173,20 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 <input type="file" id="fileInput" onchange="sendFile(this)" accept="image/*">
 <input type="file" id="cameraInput" onchange="sendFile(this)" accept="image/*" capture="environment">
 <input type="file" id="avatarInput" accept="image/*" onchange="setAvatar(this)">
+<!-- QR CODE MODAL -->
+<div id="qrModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:600;align-items:center;justify-content:center;">
+  <div style="background:var(--chat-surface);border:1px solid var(--chat-border);border-radius:24px;padding:28px 24px;text-align:center;width:300px;max-width:90vw;">
+    <div style="font-size:16px;font-weight:700;color:var(--chat-accent);margin-bottom:4px;">Mera QR Code</div>
+    <div style="font-size:12px;color:var(--chat-muted);margin-bottom:20px;">Scan karke seedha add karo</div>
+    <div id="qrContainer" style="background:#fff;border-radius:16px;padding:16px;display:inline-block;margin-bottom:16px;"></div>
+    <div style="font-size:18px;font-weight:700;color:var(--chat-accent);letter-spacing:6px;margin-bottom:16px;" id="qrIdLabel">-</div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="shareMyId()" style="flex:1;padding:11px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--chat-accent),#ff8c00);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">🔗 Share Link</button>
+      <button onclick="document.getElementById('qrModal').style.display='none'" style="flex:1;padding:11px;border-radius:14px;border:1px solid var(--chat-border);background:none;color:var(--chat-muted);font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif;">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- NOTIFICATIONS SCREEN -->
@@ -1219,13 +1235,13 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 
-import { getDatabase, ref, set, push, onValue, remove, onDisconnect, get, update, serverTimestamp, query as fbQuery, limitToLast, orderByKey }
+import { getDatabase, ref, set, push, onValue, remove, onDisconnect, get, update, serverTimestamp, query as fbQuery, limitToLast, orderByKey, orderByChild, equalTo }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 // Expose query helpers for paginated loading
-window._fbQueryFns = { query: fbQuery, limitToLast, orderByKey };
+window._fbQueryFns = { query: fbQuery, limitToLast, orderByKey, orderByChild, equalTo };
 
 // ===== EARLY SCREEN SWITCH — Firebase se pehle =====
 function showScreen(id){
@@ -1377,7 +1393,7 @@ window.logoutUser = async function() {
 };
 
 // ===== STATE =====
-let myId = null, myName = '', myIcon = 'om', myAvatar = null;
+let myId = null, myDisplayId = null, myName = '', myIcon = 'om', myAvatar = null;
 let userPassword = null;
 let count = 0, malaTarget = 108, totalMantras = 0, soundOn = true;
 let selectedMantra = null;
@@ -1527,7 +1543,7 @@ window.saveProfile = function() {
   localStorage.setItem('dc_name',myName);
   localStorage.setItem('dc_setup_done','1');
   if(myId) {
-    set(ref(db,`users/${myId}`),{ name:myName, online:true, ts:Date.now(), icon:myIcon }).catch(()=>{});
+    set(ref(db,`users/${myId}`),{ name:myName, online:true, ts:Date.now(), icon:myIcon, displayId: myDisplayId }).catch(()=>{});
   }
   showScreen('counter');
   initMain();
@@ -1718,9 +1734,9 @@ function initFirebase() {
     localStorage.setItem('dc_my_id', myId);
   }
 
-  // Set online
+  // Set online — displayId bhi store karo taaki search ho sake
   const meRef=ref(db,`users/${myId}`);
-  set(meRef,{ name:myName, online:true, ts:Date.now(), icon:myIcon });
+  set(meRef,{ name:myName, online:true, ts:Date.now(), icon:myIcon, displayId: myDisplayId });
   onDisconnect(meRef).update({ online:false });
 
   // Listen for messages
@@ -2152,9 +2168,6 @@ window.openChat=async function(uid,name) {
   });
 
   showScreen('chatScreen');
-  // Select mode button dikhao
-  const selectBtn = document.getElementById('selectModeBtn');
-  if(selectBtn) selectBtn.style.display = 'flex';
 }
 
 window.refreshChat=function(){
@@ -2174,10 +2187,6 @@ window.refreshChatList=function(){
 };
 
 window.closeChatScreen=function(){
-  // Select mode reset karo
-  if(_selectMode) toggleSelectMode();
-  const selectBtn = document.getElementById('selectModeBtn');
-  if(selectBtn) selectBtn.style.display = 'none';
   // Listener band karo
   if(_activeListener){ _activeListener(); _activeListener=null; }
   // Wapas jaate waqt bhi read mark karo
@@ -2504,18 +2513,22 @@ window.searchUser=function(val) {
   const res=document.getElementById('searchResults');
   if(!val||val.length<1) { res.innerHTML=''; _lastSearchUid=null; return; }
   if(val.length<6) { res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">Enter a 6-letter ID...</div>'; _lastSearchUid=null; return; }
-  if(val===myId) { res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">That\'s your own ID! 😄</div>'; return; }
+  if(val===myDisplayId) { res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">That\'s your own ID! 😄</div>'; return; }
 
   clearTimeout(_searchUserTimer);
   res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">🔍 Searching...</div>';
   _searchUserTimer = setTimeout(async ()=>{
     try {
+      const { query: fbQuery, orderByChild, equalTo } = window._fbQueryFns;
       const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000));
-      const snap = await Promise.race([get(ref(db,`users/${val}`)), timeoutPromise]);
+      // Search by displayId field
+      const q = fbQuery(ref(db,'users'), orderByChild('displayId'), equalTo(val));
+      const snap = await Promise.race([get(q), timeoutPromise]);
       if(snap.exists()) {
-        const u=snap.val();
-        _lastSearchUid = val; _lastSearchName = u.name||val;
-        searchUser_render(val, u.name||val, u.online);
+        let foundUid=null, foundUser=null;
+        snap.forEach(child=>{ foundUid=child.key; foundUser=child.val(); });
+        _lastSearchUid = foundUid; _lastSearchName = foundUser.name||foundUid;
+        searchUser_render(foundUid, foundUser.name||foundUid, foundUser.online);
       } else {
         res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">❌ User not found — check the ID</div>';
         _lastSearchUid=null;
@@ -2744,14 +2757,14 @@ function addMsg(text,from,name,time,msgId,replyData) {
       ${me?`<span class="msg-tick sent" id="tick-${msgId}"><span style="color:#666;font-size:12px;">✓</span></span>`:''}
     </div>`;
 
-  // Long press → context menu
+  // Long press → context menu (apne msg pe) ya select mode
   let lpTimer=null;
   let lpY=0;
   const onLpStart=(e)=>{
     lpY=e.touches?e.touches[0].clientY:e.clientY;
     lpTimer=setTimeout(()=>{
-      // isMe check: from===myId
       const isMine=from===myId;
+      if(_selectMode) return; // already in select mode
       _ctxMsg={text,id:msgId,src:null,isMe:isMine};
       showCtxMenu({text,id:msgId,isMe:isMine}, lpY, isMine);
     },500);
@@ -3006,7 +3019,7 @@ window.setMyIcon = function(n) {
 };
 
 function updateSettingsUI() {
-  const shortId = myId || '-';
+  const shortId = myDisplayId || '-';
   document.getElementById('settingsName').textContent=myName||'-';
   document.getElementById('settingsId').textContent='ID: '+shortId;
   document.getElementById('myIdDisplay').textContent=shortId;
@@ -3034,7 +3047,7 @@ window.searchUserFromSettings=function(val){
   const res=document.getElementById('settingsSearchResults');
   if(!val||val.length<1){ res.innerHTML=''; return; }
   if(val.length<6){ res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">Enter a 6-letter ID (e.g. AB12XY)...</div>'; return; }
-  if(val===myId){ res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">That is your own ID! 😄</div>'; return; }
+  if(val===myDisplayId){ res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">That is your own ID! 😄</div>'; return; }
 
   // Debounce — 400ms baad search karo
   clearTimeout(_settingsSearchTimer);
@@ -3085,8 +3098,9 @@ window.searchUserFromSettings=function(val){
 };
 
 window.copyMyId=function(){
-  if(!myId) return;
-  navigator.clipboard.writeText(myId).then(()=>toast('ID copied ✓')).catch(()=>toast('ID: '+myId));
+  const id = myDisplayId || myId;
+  if(!id) return;
+  navigator.clipboard.writeText(id).then(()=>toast('ID copied ✓')).catch(()=>toast('ID: '+id));
 };
 
 window.changePassword=function(){
@@ -3273,15 +3287,9 @@ function showCtxMenu(data, touchY, isRight){
 window.ctxDelete=function(){
   if(!_ctxMsg||!_ctxMsg.id||!currentChatId) return;
   document.getElementById('msgContext').classList.remove('show');
-  if(!confirm('Delete this message?')) return;
-  const msgId=_ctxMsg.id;
-  const roomId=chatRoomId(myId,currentChatId);
-  // Firebase se delete karo
-  remove(ref(db,`chats/${roomId}/messages/${msgId}`)).catch(()=>{});
-  // DOM se bhi hatao
-  const el=document.querySelector(`.msg-wrap[data-msgid="${msgId}"]`);
-  if(el) el.remove();
-  toast('Message deleted ✓');
+  // Select mode start karo — user aur messages select kar sakta hai
+  const el = document.querySelector(`.msg-wrap[data-msgid="${_ctxMsg.id}"]`);
+  if(el) startSelectMode(_ctxMsg.id, el);
 };
 window.ctxReply=function(){
   if(_ctxMsg){replyTo={text:_ctxMsg.text||'',msgId:_ctxMsg.id};showReplyBar(_ctxMsg.text||'');}
@@ -3347,41 +3355,115 @@ document.addEventListener('click',e=>{
   }
 });
 
+// ===== QR CODE =====
+window.showQR = function() {
+  const id = myDisplayId || '-';
+  document.getElementById('qrIdLabel').textContent = id;
+  const modal = document.getElementById('qrModal');
+  modal.style.display = 'flex';
+  const container = document.getElementById('qrContainer');
+  container.innerHTML = '';
+  // QR library load karo
+  if(!window.QRCode) {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    script.onload = () => _renderQR(container, id);
+    document.head.appendChild(script);
+  } else {
+    _renderQR(container, id);
+  }
+  modal.addEventListener('click', e => { if(e.target===modal) modal.style.display='none'; }, {once:true});
+};
+
+function _renderQR(container, id) {
+  const appUrl = window.location.origin + window.location.pathname;
+  const link = `${appUrl}?add=${id}`;
+  new QRCode(container, {
+    text: link,
+    width: 200, height: 200,
+    colorDark: '#1a0a00',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+// ===== SHARE LINK =====
+window.shareMyId = function() {
+  const id = myDisplayId || '-';
+  const appUrl = window.location.origin + window.location.pathname;
+  const link = `${appUrl}?add=${id}`;
+  const text = `Daily Chant pe mujhse connect karo!\nMera ID: ${id}\nLink: ${link}`;
+  if(navigator.share) {
+    navigator.share({ title: 'Daily Chant', text, url: link }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(text).then(()=>toast('Link copied ✓')).catch(()=>toast('Link: '+link));
+  }
+};
+
+// ===== HANDLE ?add=XXXXXX DEEPLINK =====
+(function checkDeeplink() {
+  const params = new URLSearchParams(window.location.search);
+  const addId = params.get('add');
+  if(addId && addId.length===6) {
+    window._deepLinkAddId = addId.toUpperCase();
+  }
+})();
+
+function handleDeepLink() {
+  if(!window._deepLinkAddId || !myId) return;
+  const addId = window._deepLinkAddId;
+  window._deepLinkAddId = null;
+  // Search karo aur People screen pe dikhao
+  showScreen('peopleScreen');
+  const bar = document.getElementById('searchBar');
+  if(bar) { bar.value = addId; searchUser(addId); }
+}
+
 // ===== MULTI-SELECT MESSAGE DELETE =====
 let _selectMode = false;
 let _selectedMsgIds = new Set();
 
-window.toggleSelectMode = function() {
-  _selectMode = !_selectMode;
+// Long press pe select mode ON karo (pehla message auto-select)
+function startSelectMode(msgId, msgWrap) {
+  _selectMode = true;
   _selectedMsgIds.clear();
-  const btn = document.getElementById('selectModeBtn');
-  const delBtn = document.getElementById('deleteSelectedBtn');
-  if(_selectMode) {
-    btn.style.background = 'rgba(255,107,0,0.3)';
-    btn.style.borderColor = 'var(--chat-accent)';
-    delBtn.style.display = 'flex';
-    toast('Messages select karo, phir 🗑️ tap karo');
-    // All msg bubbles pe select overlay add karo
-    document.querySelectorAll('.msg-wrap[data-msgid]').forEach(w => {
-      w.style.cursor = 'pointer';
-      w.style.opacity = '1';
-      w.addEventListener('click', _onMsgSelectClick);
-    });
-  } else {
-    btn.style.background = '';
-    btn.style.borderColor = '';
-    delBtn.style.display = 'none';
-    document.querySelectorAll('.msg-wrap[data-msgid]').forEach(w => {
-      w.style.cursor = '';
-      w.style.opacity = '1';
-      w.style.outline = '';
-      w.removeEventListener('click', _onMsgSelectClick);
-    });
+  _selectedMsgIds.add(msgId);
+  msgWrap.style.outline = '2px solid var(--chat-accent)';
+  msgWrap.style.borderRadius = '18px';
+  msgWrap.style.opacity = '0.75';
+  // Sare messages pe click listener lagao
+  document.querySelectorAll('.msg-wrap[data-msgid]').forEach(w => {
+    w.style.cursor = 'pointer';
+    w.addEventListener('click', _onMsgSelectClick);
+  });
+  // Delete bar dikhao
+  _showSelectBar();
+  toast('Messages select karo, phir Delete tap karo');
+}
+
+function _showSelectBar() {
+  let bar = document.getElementById('selectDeleteBar');
+  if(!bar) {
+    bar = document.createElement('div');
+    bar.id = 'selectDeleteBar';
+    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(20,20,20,0.97);border-top:1px solid #ff4444;padding:12px 16px max(20px,env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;z-index:300;';
+    bar.innerHTML = `<button onclick="cancelSelectMode()" style="background:none;border:1px solid var(--chat-border);color:var(--chat-muted);border-radius:20px;padding:8px 16px;font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif;">✕ Cancel</button>
+    <span id="selectCount" style="font-size:13px;color:var(--chat-text);font-weight:600;">1 selected</span>
+    <button onclick="deleteSelectedMsgs()" style="background:#ff4444;border:none;color:#fff;border-radius:20px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">🗑️ Delete</button>`;
+    document.body.appendChild(bar);
   }
-};
+  bar.style.display = 'flex';
+  _updateSelectCount();
+}
+
+function _updateSelectCount() {
+  const el = document.getElementById('selectCount');
+  if(el) el.textContent = _selectedMsgIds.size + ' selected';
+}
 
 function _onMsgSelectClick(e) {
   if(!_selectMode) return;
+  e.stopPropagation();
   const msgId = this.dataset.msgid;
   if(!msgId) return;
   if(_selectedMsgIds.has(msgId)) {
@@ -3391,28 +3473,37 @@ function _onMsgSelectClick(e) {
   } else {
     _selectedMsgIds.add(msgId);
     this.style.outline = '2px solid var(--chat-accent)';
-    this.style.opacity = '0.7';
+    this.style.opacity = '0.75';
     this.style.borderRadius = '18px';
   }
-  const delBtn = document.getElementById('deleteSelectedBtn');
-  if(delBtn) delBtn.textContent = _selectedMsgIds.size > 0 ? `🗑️ ${_selectedMsgIds.size}` : '🗑️';
+  _updateSelectCount();
 }
 
+window.cancelSelectMode = function() {
+  _selectMode = false;
+  _selectedMsgIds.clear();
+  document.querySelectorAll('.msg-wrap[data-msgid]').forEach(w => {
+    w.style.cursor = '';
+    w.style.opacity = '1';
+    w.style.outline = '';
+    w.removeEventListener('click', _onMsgSelectClick);
+  });
+  const bar = document.getElementById('selectDeleteBar');
+  if(bar) bar.style.display = 'none';
+};
+
 window.deleteSelectedMsgs = async function() {
-  if(_selectedMsgIds.size === 0) { toast('Koi message select nahi kiya'); return; }
+  if(_selectedMsgIds.size === 0) { toast('Koi message select nahi'); return; }
   if(!confirm(`${_selectedMsgIds.size} message(s) delete karo?`)) return;
   const roomId = chatRoomId(myId, currentChatId);
-  const promises = [];
-  _selectedMsgIds.forEach(msgId => {
-    promises.push(remove(ref(db, `chats/${roomId}/messages/${msgId}`)).catch(()=>{}));
+  const ids = [..._selectedMsgIds];
+  cancelSelectMode();
+  for(const msgId of ids) {
+    remove(ref(db, `chats/${roomId}/messages/${msgId}`)).catch(()=>{});
     const el = document.querySelector(`.msg-wrap[data-msgid="${msgId}"]`);
     if(el) el.remove();
-  });
-  await Promise.all(promises);
-  const count = _selectedMsgIds.size;
-  _selectedMsgIds.clear();
-  toggleSelectMode(); // Select mode band karo
-  toast(`${count} message(s) delete ho gaye ✓`);
+  }
+  toast(`${ids.length} message(s) delete ho gaye ✓`);
 };
 
 // ===== CHAT INFO =====
@@ -3430,9 +3521,12 @@ function handleAuthUser(user) {
 
   if(!user) { showScreen('googleLogin'); return; }
 
+  const fullUid = user.uid;
   const shortId = user.uid.substr(0,6).toUpperCase();
-  myId = shortId;
-  localStorage.setItem('dc_my_id', shortId);
+  myId = fullUid; // Full UID — Firebase rules ke liye
+  myDisplayId = shortId; // 6-char — display aur search ke liye
+  localStorage.setItem('dc_my_id', fullUid);
+  localStorage.setItem('dc_my_display_id', shortId);
 
   // Name Google se lo agar missing hai
   if(!myName && user.displayName) {
@@ -3469,6 +3563,7 @@ function handleAuthUser(user) {
   migratePasswordIfNeeded().then(()=>{
     showScreen('counter');
     initMain();
+    setTimeout(handleDeepLink, 1500);
   });
 }
 
@@ -3477,6 +3572,7 @@ function startApp() {
   const savedAvatar=localStorage.getItem('dc_avatar');
   if(savedName) myName=savedName;
   if(savedAvatar) myAvatar=savedAvatar;
+  myDisplayId = localStorage.getItem('dc_my_display_id') || null;
 
   const nav=document.getElementById('bottomNav');
   if(nav) nav.style.display='none';
