@@ -1145,6 +1145,7 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
   <div class="ctx-item" onclick="ctxReply()"><span class="ctx-icon">↩</span> Reply</div>
   <div class="ctx-item" onclick="ctxCopy()"><span class="ctx-icon">📋</span> Copy</div>
   <div class="ctx-item" onclick="ctxEdit()" id="ctxEditItem" style="display:none"><span class="ctx-icon">✏️</span> Edit</div>
+  <div class="ctx-item" onclick="ctxDelete()" id="ctxDeleteItem" style="display:none"><span class="ctx-icon">🗑️</span> Delete</div>
   <div class="ctx-item" onclick="ctxDownload()" id="ctxDlItem" style="display:none"><span class="ctx-icon">⬇</span> Save</div>
   <div class="ctx-item" onclick="document.getElementById('msgContext').classList.remove('show')"><span class="ctx-icon">✕</span> Close</div>
 </div>
@@ -1554,6 +1555,33 @@ function initMain() {
 
   // Notifications listener start karo
   setTimeout(()=>{ listenNotifications(); updateNotifBadge(); }, 1000);
+
+  // Logout-login ke baad Firebase se fresh following sync karo
+  setTimeout(syncFollowingFromFirebase, 1500);
+}
+
+// Firebase userFollowing se latest friends pull karke local sync karo
+async function syncFollowingFromFirebase() {
+  if(!myId) return;
+  try {
+    const snap = await get(ref(db, `userFollowing/${myId}`));
+    if(!snap.exists()) return;
+    let changed = false;
+    snap.forEach(child => {
+      const d = child.val();
+      if(!d || !child.key) return;
+      if(!following[child.key]) {
+        following[child.key] = { name: d.name || child.key, uid: child.key };
+        changed = true;
+      }
+    });
+    if(changed) {
+      localStorage.setItem('dc_following', JSON.stringify(following));
+      Object.keys(following).forEach(uid => listenUserStatus(uid));
+      renderPeople();
+      renderChatList();
+    }
+  } catch(e) { /* silent */ }
 }
 
 function updateCountUI() {
@@ -2287,6 +2315,13 @@ window.renderNotifications = function() {
           <div class="notif-text"><strong>${escH(n.name)}</strong> has unblocked you</div>
           <div class="notif-time">${timeAgo}</div>
         </div>`;
+    } else if(n.type === 'friend_removed') {
+      inner = `
+        <div class="notif-av sys">👋</div>
+        <div class="notif-content">
+          <div class="notif-text"><strong>${escH(n.name)}</strong> ne tumhe friend list se hata diya</div>
+          <div class="notif-time">${timeAgo}</div>
+        </div>`;
     }
     div.innerHTML = inner;
     body.appendChild(div);
@@ -2331,22 +2366,31 @@ window.sendFollowRequest = async function(uid, name) {
 // ===== ACCEPT FOLLOW REQUEST =====
 window.acceptFollowRequest = async function(fromUid, fromName, notifId) {
   if(!myId) return;
-  // Update request status
-  await set(ref(db, `followRequests/${myId}/${fromUid}/status`), 'accepted');
-  // Add to following — uid field zaroori hai renderPeople ke liye
+
+  // 1. Firebase mein dono taraf status accepted karo
+  await set(ref(db, `followRequests/${myId}/${fromUid}/status`), 'accepted').catch(()=>{});
+  await set(ref(db, `followRequests/${fromUid}/${myId}/status`), 'accepted').catch(()=>{});
+
+  // 2. Firebase userFollowing — dono taraf permanently save karo
+  await set(ref(db, `userFollowing/${myId}/${fromUid}`), { name: fromName, uid: fromUid, ts: Date.now() }).catch(()=>{});
+  await set(ref(db, `userFollowing/${fromUid}/${myId}`), { name: myName, uid: myId, ts: Date.now() }).catch(()=>{});
+
+  // 3. Meri local following update (main B hun — A ko add karo)
   following[fromUid] = { name: fromName, uid: fromUid };
   localStorage.setItem('dc_following', JSON.stringify(following));
-  // Listen to their online status
   listenUserStatus(fromUid);
-  // Notify sender: request accepted
+
+  // 4. Sender (A) ko notification bhejo — wo apni local following update karega
   await set(ref(db, `notifications/${fromUid}/${myId}_acc`), {
     type: 'request_accepted', from: myId, name: myName, ts: Date.now(), read: false
-  });
-  // Update local notif status
+  }).catch(()=>{});
+
+  // 5. Local notif status update
   const notifs = getNotifications();
   const idx = notifs.findIndex(n=>n.id===notifId||n.firebaseKey===notifId);
   if(idx>=0) { notifs[idx].status='accepted'; saveNotifications(notifs); }
-  toast(fromName + ' accepted ✅');
+
+  toast(fromName + ' accepted ✅ — ab dono friends ho!');
   renderNotifications();
   renderPeople();
   renderChatList();
@@ -2427,13 +2471,36 @@ function listenNotifications() {
       if(!d) return;
       const localNotifs = getNotifications();
       const alreadyHave = localNotifs.some(n=>n.firebaseKey===child.key);
-      if(alreadyHave) return;
-      // Add to local
-      const notif = { ...d, firebaseKey: child.key, read: false };
-      const filtered = localNotifs.filter(n=>!(n.from===d.from && n.type===d.type));
-      filtered.unshift(notif);
-      saveNotifications(filtered);
-      updateNotifBadge();
+      if(!alreadyHave) {
+        const notif = { ...d, firebaseKey: child.key, read: false };
+        const filtered = localNotifs.filter(n=>!(n.from===d.from && n.type===d.type));
+        filtered.unshift(notif);
+        saveNotifications(filtered);
+        updateNotifBadge();
+      }
+
+      // AUTO-ADD: jab request_accepted aaye toh sender bhi meri following mein aa jaye
+      if(d.type === 'request_accepted' && d.from) {
+        if(!following[d.from]) {
+          following[d.from] = { name: d.name || d.from, uid: d.from };
+          localStorage.setItem('dc_following', JSON.stringify(following));
+          listenUserStatus(d.from);
+          renderPeople();
+          renderChatList();
+          toast('🎉 ' + escH(d.name||'User') + ' ab tumhara friend hai!');
+        }
+      }
+
+      // FRIEND REMOVED: dono side se delete
+      if(d.type === 'friend_removed' && d.from) {
+        if(following[d.from]) {
+          delete following[d.from];
+          localStorage.setItem('dc_following', JSON.stringify(following));
+          renderPeople();
+          renderChatList();
+          toast(escH(d.name||'User') + ' ne tumhe friend list se hata diya');
+        }
+      }
     });
   });
 }
@@ -2559,17 +2626,34 @@ window.showUserOptions = function(uid, name) {
     <div class="block-popup-name">${escH(name)}</div>
     <button class="block-popup-btn" onclick="openChat('${uid}','${escH(name)}');document.getElementById('userOptPopup').remove();">💬 Open Chat</button>
     <button class="block-popup-btn danger" onclick="blockUser('${uid}','${escH(name)}');document.getElementById('userOptPopup').remove();">🚫 Block</button>
+    <button class="block-popup-btn" style="color:#f44336;" onclick="document.getElementById('userOptPopup').remove();unfollowUser('${uid}','${escH(name)}')">🗑️ Delete Friend</button>
     <button class="block-popup-btn" onclick="document.getElementById('userOptPopup').remove();">✕ Cancel</button>
   </div>`;
   overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
   document.body.appendChild(overlay);
 };
 
-window.unfollowUser = function(uid, name) {
-  if(!confirm('Unfollow ' + name + '?')) return;
+window.unfollowUser = async function(uid, name) {
+  if(!confirm('Delete friend ' + name + '? Dono ki list se hat jaayega.')) return;
+
+  // 1. Meri local following se hatao
   delete following[uid];
-  localStorage.setItem('dc_following',JSON.stringify(following));
-  toast(name + ' unfollowed');
+  localStorage.setItem('dc_following', JSON.stringify(following));
+
+  // 2. Firebase userFollowing dono taraf se hatao
+  set(ref(db, `userFollowing/${myId}/${uid}`), null).catch(()=>{});
+  set(ref(db, `userFollowing/${uid}/${myId}`), null).catch(()=>{});
+
+  // 3. followRequests bhi clear karo
+  set(ref(db, `followRequests/${myId}/${uid}`), null).catch(()=>{});
+  set(ref(db, `followRequests/${uid}/${myId}`), null).catch(()=>{});
+
+  // 4. Dusre ko notification bhejo — wo bhi apni list se hata de
+  await set(ref(db, `notifications/${uid}/${myId}_fremoved`), {
+    type: 'friend_removed', from: myId, name: myName, ts: Date.now(), read: false
+  }).catch(()=>{});
+
+  toast(name + ' friend list se hata diya ✓');
   renderPeople();
   renderChatList();
 };
@@ -2721,18 +2805,28 @@ function addMsg(text,from,name,time,msgId,replyData) {
       ${me?`<span class="msg-tick sent" id="tick-${msgId}"><span style="color:#666;font-size:12px;">✓</span></span>`:''}
     </div>`;
 
-  // Long press → context menu
+  // Long press → context menu ya select mode
   let lpTimer=null;
   let lpY=0;
   const onLpStart=(e)=>{
     lpY=e.touches?e.touches[0].clientY:e.clientY;
     lpTimer=setTimeout(()=>{
-      // isMe check: from===myId
       const isMine=from===myId;
+      if(_selectMode) return; // already in select mode — normal click handle karega
       _ctxMsg={text,id:msgId,src:null,isMe:isMine};
       showCtxMenu({text,id:msgId,isMe:isMine}, lpY, isMine);
     },500);
   };
+  // Double tap → select mode start karo
+  let _lastTap=0;
+  w.addEventListener('touchend', e=>{
+    const now=Date.now();
+    if(now-_lastTap<350 && msgId) {
+      clearTimeout(lpTimer);
+      startSelectMode(msgId, w);
+    }
+    _lastTap=now;
+  });
   const onLpEnd=()=>clearTimeout(lpTimer);
   w.addEventListener('touchstart',onLpStart,{passive:true});
   w.addEventListener('touchend',onLpEnd);
@@ -3224,10 +3318,13 @@ function showCtxMenu(data, touchY, isRight){
   const ctx=document.getElementById('msgContext');
   const dlItem=document.getElementById('ctxDlItem');
   const editItem=document.getElementById('ctxEditItem');
+  const deleteItem=document.getElementById('ctxDeleteItem');
   if(dlItem) dlItem.style.display=data.src?'flex':'none';
-  // Show Edit only for own text messages
+  // Edit only for own text messages
   if(editItem) editItem.style.display=(data.isMe && data.text)?'flex':'none';
-  const menuH=180;
+  // Delete only for own messages
+  if(deleteItem) deleteItem.style.display=data.isMe?'flex':'none';
+  const menuH=220;
   let top=touchY-menuH-10;
   if(top<10) top=touchY+10;
   ctx.style.top=top+'px';
@@ -3235,6 +3332,19 @@ function showCtxMenu(data, touchY, isRight){
   ctx.style.right=isRight?'12px':'auto';
   ctx.classList.add('show');
 }
+
+window.ctxDelete=async function(){
+  if(!_ctxMsg||!_ctxMsg.id) return;
+  document.getElementById('msgContext').classList.remove('show');
+  if(!confirm('Ye message delete karo?')) return;
+  const roomId=chatRoomId(myId,currentChatId);
+  // Firebase se delete
+  await remove(ref(db,`chats/${roomId}/messages/${_ctxMsg.id}`)).catch(()=>{});
+  // DOM se remove
+  const el=document.querySelector(`.msg-wrap[data-msgid="${_ctxMsg.id}"]`);
+  if(el) el.remove();
+  toast('Message delete ho gaya ✓');
+};
 window.ctxReply=function(){
   if(_ctxMsg){replyTo={text:_ctxMsg.text||'',msgId:_ctxMsg.id};showReplyBar(_ctxMsg.text||'');}
   document.getElementById('msgContext').classList.remove('show');
@@ -3303,6 +3413,92 @@ document.addEventListener('click',e=>{
 window.openChatInfo=function(){
   if(!currentChatId) return;
   toast(currentChatName+' — ID: '+currentChatId);
+};
+
+// ===== MULTI-SELECT MESSAGE DELETE =====
+let _selectMode = false;
+let _selectedMsgIds = new Set();
+
+function startSelectMode(msgId, msgWrap) {
+  if(_selectMode) return;
+  _selectMode = true;
+  _selectedMsgIds.clear();
+  _selectedMsgIds.add(msgId);
+  msgWrap.style.outline = '2px solid var(--chat-accent)';
+  msgWrap.style.borderRadius = '18px';
+  msgWrap.style.opacity = '0.75';
+  document.querySelectorAll('.msg-wrap[data-msgid]').forEach(w => {
+    w.style.cursor = 'pointer';
+    w.addEventListener('click', _onMsgSelectClick);
+  });
+  _showSelectBar();
+  toast('Messages select karo, phir Delete tap karo');
+}
+
+function _showSelectBar() {
+  let bar = document.getElementById('selectDeleteBar');
+  if(!bar) {
+    bar = document.createElement('div');
+    bar.id = 'selectDeleteBar';
+    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(20,20,20,0.97);border-top:1px solid #ff4444;padding:12px 16px max(20px,env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;z-index:300;';
+    bar.innerHTML = `
+      <button onclick="cancelSelectMode()" style="background:none;border:1px solid var(--chat-border);color:var(--chat-muted);border-radius:20px;padding:8px 16px;font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif;">✕ Cancel</button>
+      <span id="selectCount" style="font-size:13px;color:var(--chat-text);font-weight:600;">1 selected</span>
+      <button onclick="deleteSelectedMsgs()" style="background:#ff4444;border:none;color:#fff;border-radius:20px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">🗑️ Delete</button>`;
+    document.body.appendChild(bar);
+  }
+  bar.style.display = 'flex';
+  _updateSelectCount();
+}
+
+function _updateSelectCount() {
+  const el = document.getElementById('selectCount');
+  if(el) el.textContent = _selectedMsgIds.size + ' selected';
+}
+
+function _onMsgSelectClick(e) {
+  if(!_selectMode) return;
+  e.stopPropagation();
+  const msgId = this.dataset.msgid;
+  if(!msgId) return;
+  if(_selectedMsgIds.has(msgId)) {
+    _selectedMsgIds.delete(msgId);
+    this.style.outline = '';
+    this.style.opacity = '1';
+  } else {
+    _selectedMsgIds.add(msgId);
+    this.style.outline = '2px solid var(--chat-accent)';
+    this.style.opacity = '0.75';
+    this.style.borderRadius = '18px';
+  }
+  _updateSelectCount();
+}
+
+window.cancelSelectMode = function() {
+  _selectMode = false;
+  _selectedMsgIds.clear();
+  document.querySelectorAll('.msg-wrap[data-msgid]').forEach(w => {
+    w.style.cursor = '';
+    w.style.opacity = '1';
+    w.style.outline = '';
+    w.removeEventListener('click', _onMsgSelectClick);
+  });
+  const bar = document.getElementById('selectDeleteBar');
+  if(bar) bar.style.display = 'none';
+};
+
+window.deleteSelectedMsgs = async function() {
+  if(_selectedMsgIds.size === 0) { toast('Koi message select nahi'); return; }
+  if(!confirm(_selectedMsgIds.size + ' message(s) delete karo?')) return;
+  const roomId = chatRoomId(myId, currentChatId);
+  const ids = [..._selectedMsgIds];
+  cancelSelectMode();
+  for(const msgId of ids) {
+    remove(ref(db, `chats/${roomId}/messages/${msgId}`)).catch(()=>{});
+    const el = document.querySelector(`.msg-wrap[data-msgid="${msgId}"]`);
+    if(el) el.remove();
+  }
+  toast(ids.length + ' message(s) delete ho gaye ✓');
 };
 
 // ===== APP START =====
