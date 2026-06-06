@@ -1772,10 +1772,7 @@ function initFirebase() {
 
 function handleInboxMsg(d) {
   if(d.type==='newmsg') {
-    // Sirf chat list update karo — koi notification nahi
-    // Chat list mein lastMsg update karo
     updateChatListLocal(d.from, d.name||d.from, d.text||'[Media]', '');
-    // Agar ye chat abhi open nahi hai → unread mark karo
     if(currentChatId !== d.from) {
       markUnread(d.from);
     }
@@ -1786,6 +1783,46 @@ function handleInboxMsg(d) {
     updateMsgTick(d.msgId,'delivered');
   } else if(d.type==='typing') {
     if(currentChatId===d.from) showTyping(d.typing);
+
+  // ===== FOLLOW REQUEST — real-time signal =====
+  } else if(d.type==='follow_request') {
+    // Local notification mein add karo (agar pehle se nahi hai)
+    const localNotifs = getNotifications();
+    const alreadyHave = localNotifs.some(n => n.from===d.from && n.type==='follow_request');
+    if(!alreadyHave) {
+      const notif = {
+        type: 'follow_request', from: d.from, name: d.name||d.from,
+        status: 'pending', ts: Date.now(), read: false,
+        id: Date.now()+'_req_'+d.from
+      };
+      localNotifs.unshift(notif);
+      saveNotifications(localNotifs);
+      updateNotifBadge();
+      toast('📩 ' + escH(d.name||d.from) + ' ne follow request bheji!');
+    }
+
+  // ===== REQUEST ACCEPTED — real-time signal =====
+  } else if(d.type==='request_accepted') {
+    // Unhe apni following mein add karo
+    if(!following[d.from]) {
+      following[d.from] = { name: d.name||d.from, uid: d.from };
+      localStorage.setItem('dc_following', JSON.stringify(following));
+      listenUserStatus(d.from);
+      renderPeople();
+      renderChatList();
+      toast('🎉 ' + escH(d.name||d.from) + ' ne request accept ki — ab chat kar sakte ho!');
+    }
+    // Local notification mein bhi add karo
+    const localNotifs2 = getNotifications();
+    const alreadyAcc = localNotifs2.some(n => n.from===d.from && n.type==='request_accepted');
+    if(!alreadyAcc) {
+      localNotifs2.unshift({
+        type: 'request_accepted', from: d.from, name: d.name||d.from,
+        ts: Date.now(), read: false, id: Date.now()+'_acc_'+d.from
+      });
+      saveNotifications(localNotifs2);
+      updateNotifBadge();
+    }
   }
 }
 
@@ -2379,11 +2416,13 @@ window.sendFollowRequest = async function(uid, name) {
   await set(ref(db, `followRequests/${uid}/${myId}`), {
     from: myId, name: myName, status: 'pending', ts: Date.now()
   });
-  // Send notification to receiver via Firebase
+  // Save persistent notification
   await set(ref(db, `notifications/${uid}/${myId}_freq`), {
     type: 'follow_request', from: myId, name: myName,
     status: 'pending', ts: Date.now(), read: false
   });
+  // Real-time inbox signal bhi bhejo — foreground pe turant mile
+  sendToUser(uid, { type: 'follow_request', from: myId, name: myName }).catch(()=>{});
   setRequestStatus(uid, 'sent');
   toast('Follow request sent ✓');
   renderPeople();
@@ -2407,10 +2446,12 @@ window.acceptFollowRequest = async function(fromUid, fromName, notifId) {
   localStorage.setItem('dc_following', JSON.stringify(following));
   listenUserStatus(fromUid);
 
-  // 4. Sender (A) ko notification bhejo — wo apni local following update karega
+  // 4. Sender (A) ko notification bhejo — persistent
   await set(ref(db, `notifications/${fromUid}/${myId}_acc`), {
     type: 'request_accepted', from: myId, name: myName, ts: Date.now(), read: false
   }).catch(()=>{});
+  // Real-time inbox signal — agar app khuli ho toh turant mile
+  sendToUser(fromUid, { type: 'request_accepted', from: myId, name: myName }).catch(()=>{});
 
   // 5. Local notif status update
   const notifs = getNotifications();
