@@ -527,9 +527,13 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 .bn-item.active { color:var(--chat-accent); }
 .bn-item.active .bn-icon { transform:scale(1.1); }
 .bn-badge {
-  position:absolute; top:6px; right:calc(50% - 16px);
-  background:#25D366; border-radius:50%; width:9px; height:9px;
+  position:absolute; top:2px; right:calc(50% - 20px);
+  background:#25D366; border-radius:10px;
+  min-width:16px; height:16px; padding:0 4px;
   display:none; border:1.5px solid rgba(20,20,20,0.97);
+  font-size:9px; font-weight:700; color:#fff;
+  display:none; align-items:center; justify-content:center;
+  line-height:16px; text-align:center;
 }
 .screen.has-nav { padding-bottom:62px; }
 
@@ -1782,7 +1786,16 @@ function initFirebase() {
 function handleInboxMsg(d) {
   if(d.type==='newmsg') {
     updateChatListLocal(d.from, d.name||d.from, d.text||'[Media]', '');
-    if(currentChatId !== d.from) markUnread(d.from);
+    if(currentChatId !== d.from) {
+      markUnread(d.from);
+      // Badge TURANT update karo — screen pe ho ya na ho
+      const badge = document.getElementById('bnBadge');
+      if(badge) {
+        const tot = getTotalUnread();
+        badge.style.display = tot > 0 ? 'block' : 'none';
+        badge.textContent = tot > 9 ? '9+' : String(tot);
+      }
+    }
     renderChatList();
 
   } else if(d.type==='seen') {
@@ -2152,11 +2165,22 @@ function renderChatList() {
     wrap.appendChild(inner);
     body.appendChild(wrap);
 
-    // Online status listener
+    // Online status listener — duplicate avoid
     if(!_onlineListeners.has(uid)) {
       const unsub = onValue(ref(db,`users/${uid}/online`),s=>{
+        const isOn = !!s.val();
+        // Chat list dot
         const el=document.getElementById('online-'+uid);
-        if(el) el.style.display=s.val()?'block':'none';
+        if(el) el.style.display=isOn?'block':'none';
+        // Chat header status (agar ye chat khuli hai)
+        if(currentChatId===uid) {
+          _currentPartnerOnline = isOn;
+          const stEl=document.getElementById('chatStatus');
+          if(stEl && !stEl.classList.contains('typing')) {
+            stEl.textContent=isOn?'Online':'Offline';
+            stEl.className='chat-hst'+(isOn?' online':'');
+          }
+        }
       });
       _onlineListeners.set(uid, unsub);
     }
@@ -2216,17 +2240,21 @@ window.openChat=async function(uid,name) {
     }
   });
 
-  // Online status
-  _currentPartnerOnline = false; // reset on new chat open
-  onValue(ref(db,`users/${uid}/online`),s=>{
+  // Online status — pehle '...' dikhao, phir Firebase se lo
+  _currentPartnerOnline = false;
+  const stElInit = document.getElementById('chatStatus');
+  if(stElInit) { stElInit.textContent='...'; stElInit.className='chat-hst'; }
+
+  // Agar pehle se renderChatList ka listener hai toh wahi update karega
+  // Extra listener add karo sirf header ke liye (agar uid ka listener nahi hai)
+  get(ref(db,`users/${uid}/online`)).then(s=>{
     _currentPartnerOnline = !!s.val();
     const stEl=document.getElementById('chatStatus');
-    // Sirf tab update karo jab typing nahi chal rahi
     if(stEl && !stEl.classList.contains('typing')) {
       stEl.textContent=_currentPartnerOnline?'Online':'Offline';
       stEl.className='chat-hst'+(_currentPartnerOnline?' online':'');
     }
-  });
+  }).catch(()=>{});
 
   showScreen('chatScreen');
 }
@@ -2258,22 +2286,23 @@ window.closeChatScreen=function(){
 };
 
 function listenUserStatus(uid) {
+  // Agar pehle se listener hai toh skip karo (renderChatList wala handle karta hai dot)
+  if(_onlineListeners.has(uid)) return;
   onValue(ref(db,`users/${uid}/online`), s => {
     const isOnline = !!s.val();
-    // Chat list ka online dot update karo
+    // Chat list dot
     const dot = document.getElementById('online-'+uid);
     if(dot) dot.style.display = isOnline ? 'block' : 'none';
-    // u-status in People screen update karo
+    // People screen status
     const uStatus = document.getElementById('ustatus-'+uid);
     if(uStatus) {
       uStatus.textContent = isOnline ? 'Online' : 'Offline';
       uStatus.className = 'u-status' + (isOnline ? ' online' : '');
     }
-    // Agar ye chat abhi khuli hai toh header status bhi update karo
+    // Chat header
     if(currentChatId === uid) {
       _currentPartnerOnline = isOnline;
       const stEl = document.getElementById('chatStatus');
-      // Sirf tab update karo jab typing nahi chal rahi
       if(stEl && !stEl.classList.contains('typing')) {
         stEl.textContent = isOnline ? 'Online' : 'Offline';
         stEl.className = 'chat-hst' + (isOnline ? ' online' : '');
@@ -2367,9 +2396,9 @@ window.renderNotifications = function() {
         <div class="notif-content">
           <div class="notif-text"><strong>${escH(n.name)}</strong> sent you a follow request</div>
           <div class="notif-time">${timeAgo}</div>
-          ${n.status==='pending' ? `<div class="notif-actions">
-            <button class="notif-accept-btn" onclick="acceptFollowRequest('${n.from}','${escH(n.name)}','${n.id}')">✅ Accept</button>
-            <button class="notif-reject-btn" onclick="rejectFollowRequest('${n.from}','${escH(n.name)}','${n.id}')">❌ Reject</button>
+          ${(!n.status || n.status==='pending') ? `<div class="notif-actions">
+            <button class="notif-accept-btn" onclick="acceptFollowRequest('${n.from}','${escH(n.name)}','${n.firebaseKey||n.id}')">✅ Accept</button>
+            <button class="notif-reject-btn" onclick="rejectFollowRequest('${n.from}','${escH(n.name)}','${n.firebaseKey||n.id}')">❌ Reject</button>
           </div>` : `<div style="font-size:12px;margin-top:6px;color:${n.status==='accepted'?'#4CAF50':'var(--chat-muted)'};">${n.status==='accepted'?'✅ Accepted':'❌ Rejected'}</div>`}
         </div>`;
     } else if(n.type === 'request_accepted') {
@@ -2455,7 +2484,7 @@ window.sendFollowRequest = async function(uid, name) {
 window.acceptFollowRequest = async function(fromUid, fromName, notifId) {
   if(!myId) return;
 
-  // 1. Firebase mein dono taraf status accepted karo
+  // 1. Firebase mein dono taraf followRequests status accepted
   await set(ref(db, `followRequests/${myId}/${fromUid}/status`), 'accepted').catch(()=>{});
   await set(ref(db, `followRequests/${fromUid}/${myId}/status`), 'accepted').catch(()=>{});
 
@@ -2463,22 +2492,24 @@ window.acceptFollowRequest = async function(fromUid, fromName, notifId) {
   await set(ref(db, `userFollowing/${myId}/${fromUid}`), { name: fromName, uid: fromUid, ts: Date.now() }).catch(()=>{});
   await set(ref(db, `userFollowing/${fromUid}/${myId}`), { name: myName, uid: myId, ts: Date.now() }).catch(()=>{});
 
-  // 3. Meri local following update (main B hun — A ko add karo)
-  following[fromUid] = { name: fromName, uid: fromUid };
-  localStorage.setItem('dc_following', JSON.stringify(following));
-  listenUserStatus(fromUid);
+  // 3. B (meri) local following mein A add karo
+  if(!following[fromUid]) {
+    following[fromUid] = { name: fromName, uid: fromUid };
+    localStorage.setItem('dc_following', JSON.stringify(following));
+    listenUserStatus(fromUid);
+  }
   setRequestStatus(fromUid, 'accepted');
 
-  // 4. Sender (A) ko notification bhejo — persistent
+  // 4. A ko notification + real-time signal bhejo
+  // A ki following mein B (main) add hoga jab A notification receive karega
   await set(ref(db, `notifications/${fromUid}/${myId}_acc`), {
     type: 'request_accepted', from: myId, name: myName, ts: Date.now(), read: false
   }).catch(()=>{});
-  // Real-time inbox signal — agar app khuli ho toh turant mile
   sendToUser(fromUid, { type: 'request_accepted', from: myId, name: myName }).catch(()=>{});
 
-  // 5. Local notif status update
+  // 5. Local notif update — is request ko accepted mark karo
   const notifs = getNotifications();
-  const idx = notifs.findIndex(n=>n.id===notifId||n.firebaseKey===notifId);
+  const idx = notifs.findIndex(n => n.id===notifId || n.firebaseKey===notifId || (n.from===fromUid && n.type==='follow_request'));
   if(idx>=0) { notifs[idx].status='accepted'; saveNotifications(notifs); }
 
   toast(fromName + ' accepted ✅ — ab dono friends ho!');
@@ -2557,51 +2588,48 @@ window.unblockUser = async function(uid, name) {
 let _notifListener = null;
 function listenNotifications() {
   if(!myId || _notifListener) return;
+
+  // onChildAdded — har naya notification ek baar milega, duplicate nahi
+  const { query: fbQ, limitToLast: lLast, orderByKey: obKey } = window._fbQueryFns || {};
+
   _notifListener = onValue(ref(db, `notifications/${myId}`), snap => {
     if(!snap.exists()) return;
     snap.forEach(child => {
       const d = child.val();
-      if(!d) return;
+      if(!d || !d.type) return;
+
+      // Duplicate check — firebaseKey se
       const localNotifs = getNotifications();
-      const alreadyHave = localNotifs.some(n=>n.firebaseKey===child.key);
+      const alreadyHave = localNotifs.some(n => n.firebaseKey === child.key);
       if(!alreadyHave) {
-        const notif = { ...d, firebaseKey: child.key, read: false };
-        const filtered = localNotifs.filter(n=>!(n.from===d.from && n.type===d.type));
+        // Purani same-type same-from entry hato, nayi daalo
+        const filtered = localNotifs.filter(n => !(n.from===d.from && n.type===d.type && !n.firebaseKey));
+        const notif = { ...d, firebaseKey: child.key, status: d.status||'pending', read: false };
         filtered.unshift(notif);
         saveNotifications(filtered);
         updateNotifBadge();
       }
 
-      // AUTO-ADD: jab request_accepted aaye toh following update karo
-      if(d.type === 'request_accepted' && d.from) {
-        if(!following[d.from]) {
-          following[d.from] = { name: d.name || d.from, uid: d.from };
-          localStorage.setItem('dc_following', JSON.stringify(following));
-          listenUserStatus(d.from);
-          renderPeople();
-          renderChatList();
-          toast('🎉 ' + escH(d.name||'User') + ' ab tumhara friend hai!');
-        }
-      }
-      // Follow request — pending status ensure karo
-      if(d.type === 'follow_request') {
-        const localNotifs = getNotifications();
-        const idx2 = localNotifs.findIndex(n => n.firebaseKey===child.key || (n.from===d.from && n.type==='follow_request'));
-        if(idx2 >= 0) {
-          if(!localNotifs[idx2].status) localNotifs[idx2].status = 'pending';
-          saveNotifications(localNotifs);
+      // request_accepted → A ki following mein B ko add karo
+      if(d.type === 'request_accepted' && d.from && !following[d.from]) {
+        following[d.from] = { name: d.name || d.from, uid: d.from };
+        localStorage.setItem('dc_following', JSON.stringify(following));
+        listenUserStatus(d.from);
+        renderPeople();
+        renderChatList();
+        // Sirf toast agar UI visible hai
+        if(document.visibilityState === 'visible') {
+          toast('🎉 ' + escH(d.name||'User') + ' ne request accept ki!');
         }
       }
 
-      // FRIEND REMOVED: dono side se delete
-      if(d.type === 'friend_removed' && d.from) {
-        if(following[d.from]) {
-          delete following[d.from];
-          localStorage.setItem('dc_following', JSON.stringify(following));
-          renderPeople();
-          renderChatList();
-          toast(escH(d.name||'User') + ' ne tumhe friend list se hata diya');
-        }
+      // friend_removed → following se hataao
+      if(d.type === 'friend_removed' && d.from && following[d.from]) {
+        delete following[d.from];
+        localStorage.setItem('dc_following', JSON.stringify(following));
+        renderPeople();
+        renderChatList();
+        toast(escH(d.name||'User') + ' ne tumhe friend list se hata diya');
       }
     });
   });
