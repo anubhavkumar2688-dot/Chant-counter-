@@ -2104,8 +2104,8 @@ function renderChatList() {
   });
   const badge=document.getElementById('bnBadge');
   const tot=getTotalUnread();
-  if(tot>0){ badge.style.display='block'; badge.textContent=''; }
-  else { badge.style.display='none'; }
+  if(tot>0){ badge.style.display='block'; badge.textContent=tot>9?'9+':String(tot); }
+  else { badge.style.display='none'; badge.textContent=''; }
 }
 
 window.openChat=async function(uid,name) {
@@ -2158,9 +2158,15 @@ window.openChat=async function(uid,name) {
   });
 
   // Online status
+  _currentPartnerOnline = false; // reset on new chat open
   onValue(ref(db,`users/${uid}/online`),s=>{
+    _currentPartnerOnline = !!s.val();
     const stEl=document.getElementById('chatStatus');
-    if(stEl){ stEl.textContent=s.val()?'Online':'Offline'; stEl.className='chat-hst'+(s.val()?' online':''); }
+    // Sirf tab update karo jab typing nahi chal rahi
+    if(stEl && !stEl.classList.contains('typing')) {
+      stEl.textContent=_currentPartnerOnline?'Online':'Offline';
+      stEl.className='chat-hst'+(_currentPartnerOnline?' online':'');
+    }
   });
 
   showScreen('chatScreen');
@@ -2193,7 +2199,28 @@ window.closeChatScreen=function(){
 };
 
 function listenUserStatus(uid) {
-  onValue(ref(db,`users/${uid}/online`),()=>{});
+  onValue(ref(db,`users/${uid}/online`), s => {
+    const isOnline = !!s.val();
+    // Chat list ka online dot update karo
+    const dot = document.getElementById('online-'+uid);
+    if(dot) dot.style.display = isOnline ? 'block' : 'none';
+    // u-status in People screen update karo
+    const uStatus = document.getElementById('ustatus-'+uid);
+    if(uStatus) {
+      uStatus.textContent = isOnline ? 'Online' : 'Offline';
+      uStatus.className = 'u-status' + (isOnline ? ' online' : '');
+    }
+    // Agar ye chat abhi khuli hai toh header status bhi update karo
+    if(currentChatId === uid) {
+      _currentPartnerOnline = isOnline;
+      const stEl = document.getElementById('chatStatus');
+      // Sirf tab update karo jab typing nahi chal rahi
+      if(stEl && !stEl.classList.contains('typing')) {
+        stEl.textContent = isOnline ? 'Online' : 'Offline';
+        stEl.className = 'chat-hst' + (isOnline ? ' online' : '');
+      }
+    }
+  });
 }
 
 // ===== FOLLOW REQUEST SYSTEM =====
@@ -2990,11 +3017,18 @@ function updateMsgTick(msgId,state) {
   }
 }
 
+let _currentPartnerOnline = false; // track partner online status
+
 function showTyping(typing) {
   const el=document.getElementById('chatStatus');
   if(!el) return;
-  el.textContent=typing?'Typing...':'Online';
-  el.className='chat-hst'+(typing?' typing':' online');
+  if(typing) {
+    el.textContent='Typing...';
+    el.className='chat-hst typing';
+  } else {
+    el.textContent=_currentPartnerOnline?'Online':'Offline';
+    el.className='chat-hst'+(_currentPartnerOnline?' online':'');
+  }
 }
 
 // Typing indicator send
