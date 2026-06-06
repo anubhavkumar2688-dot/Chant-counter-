@@ -1735,7 +1735,16 @@ function initFirebase() {
   // Set online
   const meRef=ref(db,`users/${myId}`);
   set(meRef,{ name:myName, online:true, ts:Date.now(), icon:myIcon });
-  onDisconnect(meRef).update({ online:false });
+  onDisconnect(meRef).update({ online:false, ts:Date.now() });
+  // Tab visibility change pe bhi online/offline update karo
+  document.addEventListener('visibilitychange', ()=>{
+    if(!myId) return;
+    if(document.visibilityState==='visible') {
+      set(ref(db,`users/${myId}/online`), true).catch(()=>{});
+    } else {
+      set(ref(db,`users/${myId}/online`), false).catch(()=>{});
+    }
+  });
 
   // Listen for messages
   onValue(ref(db,`inbox/${myId}`),snap=>{
@@ -1773,56 +1782,69 @@ function initFirebase() {
 function handleInboxMsg(d) {
   if(d.type==='newmsg') {
     updateChatListLocal(d.from, d.name||d.from, d.text||'[Media]', '');
-    if(currentChatId !== d.from) {
-      markUnread(d.from);
-    }
+    if(currentChatId !== d.from) markUnread(d.from);
     renderChatList();
+
   } else if(d.type==='seen') {
     updateMsgTick(d.msgId,'seen');
+
   } else if(d.type==='delivered') {
     updateMsgTick(d.msgId,'delivered');
+
   } else if(d.type==='typing') {
     if(currentChatId===d.from) showTyping(d.typing);
 
-  // ===== FOLLOW REQUEST — real-time signal =====
   } else if(d.type==='follow_request') {
-    // Local notification mein add karo (agar pehle se nahi hai)
+    // Real-time follow request aaya — notification list update karo
     const localNotifs = getNotifications();
     const alreadyHave = localNotifs.some(n => n.from===d.from && n.type==='follow_request');
     if(!alreadyHave) {
-      const notif = {
+      localNotifs.unshift({
         type: 'follow_request', from: d.from, name: d.name||d.from,
         status: 'pending', ts: Date.now(), read: false,
         id: Date.now()+'_req_'+d.from
-      };
-      localNotifs.unshift(notif);
+      });
       saveNotifications(localNotifs);
       updateNotifBadge();
       toast('📩 ' + escH(d.name||d.from) + ' ne follow request bheji!');
     }
 
-  // ===== REQUEST ACCEPTED — real-time signal =====
   } else if(d.type==='request_accepted') {
-    // Unhe apni following mein add karo
+    // Request accept hui — following update karo
     if(!following[d.from]) {
       following[d.from] = { name: d.name||d.from, uid: d.from };
       localStorage.setItem('dc_following', JSON.stringify(following));
       listenUserStatus(d.from);
       renderPeople();
       renderChatList();
-      toast('🎉 ' + escH(d.name||d.from) + ' ne request accept ki — ab chat kar sakte ho!');
+      toast('🎉 ' + escH(d.name||d.from) + ' ne request accept ki!');
     }
-    // Local notification mein bhi add karo
-    const localNotifs2 = getNotifications();
-    const alreadyAcc = localNotifs2.some(n => n.from===d.from && n.type==='request_accepted');
+    const ln2 = getNotifications();
+    const alreadyAcc = ln2.some(n => n.from===d.from && n.type==='request_accepted');
     if(!alreadyAcc) {
-      localNotifs2.unshift({
+      ln2.unshift({
         type: 'request_accepted', from: d.from, name: d.name||d.from,
         ts: Date.now(), read: false, id: Date.now()+'_acc_'+d.from
       });
-      saveNotifications(localNotifs2);
+      saveNotifications(ln2);
       updateNotifBadge();
     }
+
+  } else if(d.type==='request_rejected') {
+    // Request reject hui — notification mein dikhao
+    const ln3 = getNotifications();
+    const alreadyRej = ln3.some(n => n.from===d.from && n.type==='request_rejected');
+    if(!alreadyRej) {
+      ln3.unshift({
+        type: 'request_rejected', from: d.from, name: d.name||d.from,
+        ts: Date.now(), read: false, id: Date.now()+'_rej_'+d.from
+      });
+      saveNotifications(ln3);
+      updateNotifBadge();
+      toast('❌ ' + escH(d.name||d.from) + ' ne request reject ki');
+    }
+    // RequestStatus local cache clear karo
+    setRequestStatus(d.from, null);
   }
 }
 
@@ -2226,11 +2248,11 @@ window.refreshChatList=function(){
 };
 
 window.closeChatScreen=function(){
-  // Listener band karo
   if(_activeListener){ _activeListener(); _activeListener=null; }
-  // Wapas jaate waqt bhi read mark karo
+  stopTypingSignal(); // typing false signal bhejo
   if(currentChatId) markRead(currentChatId);
   currentChatId=null; currentChatName='';
+  _currentPartnerOnline = false;
   showScreen('chatsListScreen');
   renderChatList();
 };
@@ -2445,6 +2467,7 @@ window.acceptFollowRequest = async function(fromUid, fromName, notifId) {
   following[fromUid] = { name: fromName, uid: fromUid };
   localStorage.setItem('dc_following', JSON.stringify(following));
   listenUserStatus(fromUid);
+  setRequestStatus(fromUid, 'accepted');
 
   // 4. Sender (A) ko notification bhejo — persistent
   await set(ref(db, `notifications/${fromUid}/${myId}_acc`), {
@@ -2467,16 +2490,18 @@ window.acceptFollowRequest = async function(fromUid, fromName, notifId) {
 // ===== REJECT FOLLOW REQUEST =====
 window.rejectFollowRequest = async function(fromUid, fromName, notifId) {
   if(!myId) return;
-  await set(ref(db, `followRequests/${myId}/${fromUid}/status`), 'rejected');
-  // Notify sender
+  await set(ref(db, `followRequests/${myId}/${fromUid}/status`), 'rejected').catch(()=>{});
+  // Persistent notification
   await set(ref(db, `notifications/${fromUid}/${myId}_rej`), {
     type: 'request_rejected', from: myId, name: myName, ts: Date.now(), read: false
-  });
-  // Update local notif
+  }).catch(()=>{});
+  // Real-time signal
+  sendToUser(fromUid, { type: 'request_rejected', from: myId, name: myName }).catch(()=>{});
+  // Local notif update
   const notifs = getNotifications();
-  const idx = notifs.findIndex(n=>n.id===notifId);
+  const idx = notifs.findIndex(n=>n.id===notifId || n.firebaseKey===notifId);
   if(idx>=0) { notifs[idx].status='rejected'; saveNotifications(notifs); }
-  toast(fromName + ' request rejected ❌');
+  toast(fromName + ' request reject ki ❌');
   renderNotifications();
 };
 
@@ -2547,7 +2572,7 @@ function listenNotifications() {
         updateNotifBadge();
       }
 
-      // AUTO-ADD: jab request_accepted aaye toh sender bhi meri following mein aa jaye
+      // AUTO-ADD: jab request_accepted aaye toh following update karo
       if(d.type === 'request_accepted' && d.from) {
         if(!following[d.from]) {
           following[d.from] = { name: d.name || d.from, uid: d.from };
@@ -2556,6 +2581,15 @@ function listenNotifications() {
           renderPeople();
           renderChatList();
           toast('🎉 ' + escH(d.name||'User') + ' ab tumhara friend hai!');
+        }
+      }
+      // Follow request — pending status ensure karo
+      if(d.type === 'follow_request') {
+        const localNotifs = getNotifications();
+        const idx2 = localNotifs.findIndex(n => n.firebaseKey===child.key || (n.from===d.from && n.type==='follow_request'));
+        if(idx2 >= 0) {
+          if(!localNotifs[idx2].status) localNotifs[idx2].status = 'pending';
+          saveNotifications(localNotifs);
         }
       }
 
@@ -2646,13 +2680,16 @@ window.searchUser=function(val) {
 async function searchUser_render(uid, name, online) {
   const res=document.getElementById('searchResults');
   if(!res) return;
-  // Check request status from Firebase
+  // Firebase se fresh check — stale cache pe depend nahi
   const reqSnap = await get(ref(db, `followRequests/${uid}/${myId}`));
   const reqData = reqSnap.val();
+  // Dono direction check karo
+  const reqSnap2 = await get(ref(db, `followRequests/${myId}/${uid}`));
+  const reqData2 = reqSnap2.val();
   const blockedMe = (await get(ref(db, `blocked/${uid}/${myId}`))).val();
   const iBlockedThem = isBlocked(uid);
-  const isAccepted = following[uid] || (reqData && reqData.status==='accepted');
-  const isPending = !isAccepted && reqData && reqData.status==='pending';
+  const isAccepted = !!following[uid] || (reqData && reqData.status==='accepted') || (reqData2 && reqData2.status==='accepted');
+  const isPending = !isAccepted && ((reqData && reqData.status==='pending') || (reqData2 && reqData2.status==='pending'));
 
   let actionBtn = '';
   if(iBlockedThem) {
@@ -3075,10 +3112,17 @@ function showTyping(typing) {
 // Typing indicator send
 document.getElementById('msgInp').addEventListener('input',()=>{
   if(!currentChatId) return;
-  sendToUser(currentChatId,{type:'typing',typing:true,from:myId});
+  sendToUser(currentChatId,{type:'typing',typing:true,from:myId}).catch(()=>{});
   clearTimeout(window._typingTimer);
-  window._typingTimer=setTimeout(()=>sendToUser(currentChatId,{type:'typing',typing:false,from:myId}),1500);
+  window._typingTimer=setTimeout(()=>{
+    if(currentChatId) sendToUser(currentChatId,{type:'typing',typing:false,from:myId}).catch(()=>{});
+  },2000);
 });
+// Jab chat band ho — typing false bhejo
+function stopTypingSignal(){
+  clearTimeout(window._typingTimer);
+  if(currentChatId) sendToUser(currentChatId,{type:'typing',typing:false,from:myId}).catch(()=>{});
+}
 
 // Reply
 window.showReplyBar=function(text){
