@@ -10,6 +10,7 @@
 <link rel="manifest" href="/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 :root {
   --cream: #f7f0e2;
   --cream2: #ede3cc;
@@ -31,8 +32,6 @@
   --chat-text: #f0f0f0;
   --chat-muted: #666;
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--brown2); height:100dvh; overflow:hidden; }
@@ -374,7 +373,7 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
   box-shadow:0 4px 14px rgba(200,65,10,0.3);
 }
 .modal-close {
-  width:100%; margin-top:12px; padding:13px; border-radius:16px; border:none;
+  width:100%; margin-top:12px; padding:13px; border-radius:16px;
   background:rgba(200,150,10,0.1); color:var(--brown); font-size:14px;
   cursor:pointer; font-family:'Poppins',sans-serif;
   border:1.5px solid rgba(200,150,10,0.2);
@@ -527,13 +526,9 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 .bn-item.active { color:var(--chat-accent); }
 .bn-item.active .bn-icon { transform:scale(1.1); }
 .bn-badge {
-  position:absolute; top:2px; right:calc(50% - 20px);
-  background:#25D366; border-radius:10px;
-  min-width:16px; height:16px; padding:0 4px;
+  position:absolute; top:6px; right:calc(50% - 16px);
+  background:#25D366; border-radius:50%; width:9px; height:9px;
   display:none; border:1.5px solid rgba(20,20,20,0.97);
-  font-size:9px; font-weight:700; color:#fff;
-  display:none; align-items:center; justify-content:center;
-  line-height:16px; text-align:center;
 }
 .screen.has-nav { padding-bottom:62px; }
 
@@ -606,6 +601,8 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 /* Long press delete popup */
 .lp-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; display:flex; align-items:center; justify-content:center; animation:fadeIn 0.15s ease; }
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+@keyframes slideUp { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
+@keyframes slideDown { from{transform:translateY(0);opacity:1} to{transform:translateY(100%);opacity:0} }
 .lp-popup { background:var(--chat-surface); border:1px solid var(--chat-border); border-radius:20px; padding:8px; min-width:220px; overflow:hidden; }
 .lp-name { font-size:13px; color:var(--chat-muted); padding:10px 16px 8px; border-bottom:1px solid var(--chat-border); }
 .lp-btn { display:flex; align-items:center; gap:12px; padding:14px 16px; font-size:15px; cursor:pointer; border-radius:12px; transition:background 0.15s; color:var(--chat-text); font-family:'Poppins',sans-serif; border:none; background:none; width:100%; text-align:left; }
@@ -1739,16 +1736,7 @@ function initFirebase() {
   // Set online
   const meRef=ref(db,`users/${myId}`);
   set(meRef,{ name:myName, online:true, ts:Date.now(), icon:myIcon });
-  onDisconnect(meRef).update({ online:false, ts:Date.now() });
-  // Tab visibility change pe bhi online/offline update karo
-  document.addEventListener('visibilitychange', ()=>{
-    if(!myId) return;
-    if(document.visibilityState==='visible') {
-      set(ref(db,`users/${myId}/online`), true).catch(()=>{});
-    } else {
-      set(ref(db,`users/${myId}/online`), false).catch(()=>{});
-    }
-  });
+  onDisconnect(meRef).update({ online:false });
 
   // Listen for messages
   onValue(ref(db,`inbox/${myId}`),snap=>{
@@ -1785,79 +1773,20 @@ function initFirebase() {
 
 function handleInboxMsg(d) {
   if(d.type==='newmsg') {
+    // Sirf chat list update karo — koi notification nahi
+    // Chat list mein lastMsg update karo
     updateChatListLocal(d.from, d.name||d.from, d.text||'[Media]', '');
+    // Agar ye chat abhi open nahi hai → unread mark karo
     if(currentChatId !== d.from) {
       markUnread(d.from);
-      // Badge TURANT update karo — screen pe ho ya na ho
-      const badge = document.getElementById('bnBadge');
-      if(badge) {
-        const tot = getTotalUnread();
-        badge.style.display = tot > 0 ? 'block' : 'none';
-        badge.textContent = tot > 9 ? '9+' : String(tot);
-      }
     }
     renderChatList();
-
   } else if(d.type==='seen') {
     updateMsgTick(d.msgId,'seen');
-
   } else if(d.type==='delivered') {
     updateMsgTick(d.msgId,'delivered');
-
   } else if(d.type==='typing') {
     if(currentChatId===d.from) showTyping(d.typing);
-
-  } else if(d.type==='follow_request') {
-    // Real-time follow request aaya — notification list update karo
-    const localNotifs = getNotifications();
-    const alreadyHave = localNotifs.some(n => n.from===d.from && n.type==='follow_request');
-    if(!alreadyHave) {
-      localNotifs.unshift({
-        type: 'follow_request', from: d.from, name: d.name||d.from,
-        status: 'pending', ts: Date.now(), read: false,
-        id: Date.now()+'_req_'+d.from
-      });
-      saveNotifications(localNotifs);
-      updateNotifBadge();
-      toast('📩 ' + escH(d.name||d.from) + ' ne follow request bheji!');
-    }
-
-  } else if(d.type==='request_accepted') {
-    // Request accept hui — following update karo
-    if(!following[d.from]) {
-      following[d.from] = { name: d.name||d.from, uid: d.from };
-      localStorage.setItem('dc_following', JSON.stringify(following));
-      listenUserStatus(d.from);
-      renderPeople();
-      renderChatList();
-      toast('🎉 ' + escH(d.name||d.from) + ' ne request accept ki!');
-    }
-    const ln2 = getNotifications();
-    const alreadyAcc = ln2.some(n => n.from===d.from && n.type==='request_accepted');
-    if(!alreadyAcc) {
-      ln2.unshift({
-        type: 'request_accepted', from: d.from, name: d.name||d.from,
-        ts: Date.now(), read: false, id: Date.now()+'_acc_'+d.from
-      });
-      saveNotifications(ln2);
-      updateNotifBadge();
-    }
-
-  } else if(d.type==='request_rejected') {
-    // Request reject hui — notification mein dikhao
-    const ln3 = getNotifications();
-    const alreadyRej = ln3.some(n => n.from===d.from && n.type==='request_rejected');
-    if(!alreadyRej) {
-      ln3.unshift({
-        type: 'request_rejected', from: d.from, name: d.name||d.from,
-        ts: Date.now(), read: false, id: Date.now()+'_rej_'+d.from
-      });
-      saveNotifications(ln3);
-      updateNotifBadge();
-      toast('❌ ' + escH(d.name||d.from) + ' ne request reject ki');
-    }
-    // RequestStatus local cache clear karo
-    setRequestStatus(d.from, null);
   }
 }
 
@@ -2165,30 +2094,19 @@ function renderChatList() {
     wrap.appendChild(inner);
     body.appendChild(wrap);
 
-    // Online status listener — duplicate avoid
+    // Online status listener
     if(!_onlineListeners.has(uid)) {
       const unsub = onValue(ref(db,`users/${uid}/online`),s=>{
-        const isOn = !!s.val();
-        // Chat list dot
         const el=document.getElementById('online-'+uid);
-        if(el) el.style.display=isOn?'block':'none';
-        // Chat header status (agar ye chat khuli hai)
-        if(currentChatId===uid) {
-          _currentPartnerOnline = isOn;
-          const stEl=document.getElementById('chatStatus');
-          if(stEl && !stEl.classList.contains('typing')) {
-            stEl.textContent=isOn?'Online':'Offline';
-            stEl.className='chat-hst'+(isOn?' online':'');
-          }
-        }
+        if(el) el.style.display=s.val()?'block':'none';
       });
       _onlineListeners.set(uid, unsub);
     }
   });
   const badge=document.getElementById('bnBadge');
   const tot=getTotalUnread();
-  if(tot>0){ badge.style.display='block'; badge.textContent=tot>9?'9+':String(tot); }
-  else { badge.style.display='none'; badge.textContent=''; }
+  if(tot>0){ badge.style.display='block'; badge.textContent=''; }
+  else { badge.style.display='none'; }
 }
 
 window.openChat=async function(uid,name) {
@@ -2240,21 +2158,11 @@ window.openChat=async function(uid,name) {
     }
   });
 
-  // Online status — pehle '...' dikhao, phir Firebase se lo
-  _currentPartnerOnline = false;
-  const stElInit = document.getElementById('chatStatus');
-  if(stElInit) { stElInit.textContent='...'; stElInit.className='chat-hst'; }
-
-  // Agar pehle se renderChatList ka listener hai toh wahi update karega
-  // Extra listener add karo sirf header ke liye (agar uid ka listener nahi hai)
-  get(ref(db,`users/${uid}/online`)).then(s=>{
-    _currentPartnerOnline = !!s.val();
+  // Online status
+  onValue(ref(db,`users/${uid}/online`),s=>{
     const stEl=document.getElementById('chatStatus');
-    if(stEl && !stEl.classList.contains('typing')) {
-      stEl.textContent=_currentPartnerOnline?'Online':'Offline';
-      stEl.className='chat-hst'+(_currentPartnerOnline?' online':'');
-    }
-  }).catch(()=>{});
+    if(stEl){ stEl.textContent=s.val()?'Online':'Offline'; stEl.className='chat-hst'+(s.val()?' online':''); }
+  });
 
   showScreen('chatScreen');
 }
@@ -2276,39 +2184,17 @@ window.refreshChatList=function(){
 };
 
 window.closeChatScreen=function(){
+  // Listener band karo
   if(_activeListener){ _activeListener(); _activeListener=null; }
-  stopTypingSignal(); // typing false signal bhejo
+  // Wapas jaate waqt bhi read mark karo
   if(currentChatId) markRead(currentChatId);
   currentChatId=null; currentChatName='';
-  _currentPartnerOnline = false;
   showScreen('chatsListScreen');
   renderChatList();
 };
 
 function listenUserStatus(uid) {
-  // Agar pehle se listener hai toh skip karo (renderChatList wala handle karta hai dot)
-  if(_onlineListeners.has(uid)) return;
-  onValue(ref(db,`users/${uid}/online`), s => {
-    const isOnline = !!s.val();
-    // Chat list dot
-    const dot = document.getElementById('online-'+uid);
-    if(dot) dot.style.display = isOnline ? 'block' : 'none';
-    // People screen status
-    const uStatus = document.getElementById('ustatus-'+uid);
-    if(uStatus) {
-      uStatus.textContent = isOnline ? 'Online' : 'Offline';
-      uStatus.className = 'u-status' + (isOnline ? ' online' : '');
-    }
-    // Chat header
-    if(currentChatId === uid) {
-      _currentPartnerOnline = isOnline;
-      const stEl = document.getElementById('chatStatus');
-      if(stEl && !stEl.classList.contains('typing')) {
-        stEl.textContent = isOnline ? 'Online' : 'Offline';
-        stEl.className = 'chat-hst' + (isOnline ? ' online' : '');
-      }
-    }
-  });
+  onValue(ref(db,`users/${uid}/online`),()=>{});
 }
 
 // ===== FOLLOW REQUEST SYSTEM =====
@@ -2396,9 +2282,9 @@ window.renderNotifications = function() {
         <div class="notif-content">
           <div class="notif-text"><strong>${escH(n.name)}</strong> sent you a follow request</div>
           <div class="notif-time">${timeAgo}</div>
-          ${(!n.status || n.status==='pending') ? `<div class="notif-actions">
-            <button class="notif-accept-btn" onclick="acceptFollowRequest('${n.from}','${escH(n.name)}','${n.firebaseKey||n.id}')">✅ Accept</button>
-            <button class="notif-reject-btn" onclick="rejectFollowRequest('${n.from}','${escH(n.name)}','${n.firebaseKey||n.id}')">❌ Reject</button>
+          ${n.status==='pending' ? `<div class="notif-actions">
+            <button class="notif-accept-btn" onclick="acceptFollowRequest('${n.from}','${escH(n.name)}','${n.id}')">✅ Accept</button>
+            <button class="notif-reject-btn" onclick="rejectFollowRequest('${n.from}','${escH(n.name)}','${n.id}')">❌ Reject</button>
           </div>` : `<div style="font-size:12px;margin-top:6px;color:${n.status==='accepted'?'#4CAF50':'var(--chat-muted)'};">${n.status==='accepted'?'✅ Accepted':'❌ Rejected'}</div>`}
         </div>`;
     } else if(n.type === 'request_accepted') {
@@ -2467,13 +2353,11 @@ window.sendFollowRequest = async function(uid, name) {
   await set(ref(db, `followRequests/${uid}/${myId}`), {
     from: myId, name: myName, status: 'pending', ts: Date.now()
   });
-  // Save persistent notification
+  // Send notification to receiver via Firebase
   await set(ref(db, `notifications/${uid}/${myId}_freq`), {
     type: 'follow_request', from: myId, name: myName,
     status: 'pending', ts: Date.now(), read: false
   });
-  // Real-time inbox signal bhi bhejo — foreground pe turant mile
-  sendToUser(uid, { type: 'follow_request', from: myId, name: myName }).catch(()=>{});
   setRequestStatus(uid, 'sent');
   toast('Follow request sent ✓');
   renderPeople();
@@ -2484,7 +2368,7 @@ window.sendFollowRequest = async function(uid, name) {
 window.acceptFollowRequest = async function(fromUid, fromName, notifId) {
   if(!myId) return;
 
-  // 1. Firebase mein dono taraf followRequests status accepted
+  // 1. Firebase mein dono taraf status accepted karo
   await set(ref(db, `followRequests/${myId}/${fromUid}/status`), 'accepted').catch(()=>{});
   await set(ref(db, `followRequests/${fromUid}/${myId}/status`), 'accepted').catch(()=>{});
 
@@ -2492,24 +2376,19 @@ window.acceptFollowRequest = async function(fromUid, fromName, notifId) {
   await set(ref(db, `userFollowing/${myId}/${fromUid}`), { name: fromName, uid: fromUid, ts: Date.now() }).catch(()=>{});
   await set(ref(db, `userFollowing/${fromUid}/${myId}`), { name: myName, uid: myId, ts: Date.now() }).catch(()=>{});
 
-  // 3. B (meri) local following mein A add karo
-  if(!following[fromUid]) {
-    following[fromUid] = { name: fromName, uid: fromUid };
-    localStorage.setItem('dc_following', JSON.stringify(following));
-    listenUserStatus(fromUid);
-  }
-  setRequestStatus(fromUid, 'accepted');
+  // 3. Meri local following update (main B hun — A ko add karo)
+  following[fromUid] = { name: fromName, uid: fromUid };
+  localStorage.setItem('dc_following', JSON.stringify(following));
+  listenUserStatus(fromUid);
 
-  // 4. A ko notification + real-time signal bhejo
-  // A ki following mein B (main) add hoga jab A notification receive karega
+  // 4. Sender (A) ko notification bhejo — wo apni local following update karega
   await set(ref(db, `notifications/${fromUid}/${myId}_acc`), {
     type: 'request_accepted', from: myId, name: myName, ts: Date.now(), read: false
   }).catch(()=>{});
-  sendToUser(fromUid, { type: 'request_accepted', from: myId, name: myName }).catch(()=>{});
 
-  // 5. Local notif update — is request ko accepted mark karo
+  // 5. Local notif status update
   const notifs = getNotifications();
-  const idx = notifs.findIndex(n => n.id===notifId || n.firebaseKey===notifId || (n.from===fromUid && n.type==='follow_request'));
+  const idx = notifs.findIndex(n=>n.id===notifId||n.firebaseKey===notifId);
   if(idx>=0) { notifs[idx].status='accepted'; saveNotifications(notifs); }
 
   toast(fromName + ' accepted ✅ — ab dono friends ho!');
@@ -2521,18 +2400,16 @@ window.acceptFollowRequest = async function(fromUid, fromName, notifId) {
 // ===== REJECT FOLLOW REQUEST =====
 window.rejectFollowRequest = async function(fromUid, fromName, notifId) {
   if(!myId) return;
-  await set(ref(db, `followRequests/${myId}/${fromUid}/status`), 'rejected').catch(()=>{});
-  // Persistent notification
+  await set(ref(db, `followRequests/${myId}/${fromUid}/status`), 'rejected');
+  // Notify sender
   await set(ref(db, `notifications/${fromUid}/${myId}_rej`), {
     type: 'request_rejected', from: myId, name: myName, ts: Date.now(), read: false
-  }).catch(()=>{});
-  // Real-time signal
-  sendToUser(fromUid, { type: 'request_rejected', from: myId, name: myName }).catch(()=>{});
-  // Local notif update
+  });
+  // Update local notif
   const notifs = getNotifications();
-  const idx = notifs.findIndex(n=>n.id===notifId || n.firebaseKey===notifId);
+  const idx = notifs.findIndex(n=>n.id===notifId);
   if(idx>=0) { notifs[idx].status='rejected'; saveNotifications(notifs); }
-  toast(fromName + ' request reject ki ❌');
+  toast(fromName + ' request rejected ❌');
   renderNotifications();
 };
 
@@ -2588,48 +2465,42 @@ window.unblockUser = async function(uid, name) {
 let _notifListener = null;
 function listenNotifications() {
   if(!myId || _notifListener) return;
-
-  // onChildAdded — har naya notification ek baar milega, duplicate nahi
-  const { query: fbQ, limitToLast: lLast, orderByKey: obKey } = window._fbQueryFns || {};
-
   _notifListener = onValue(ref(db, `notifications/${myId}`), snap => {
     if(!snap.exists()) return;
     snap.forEach(child => {
       const d = child.val();
-      if(!d || !d.type) return;
-
-      // Duplicate check — firebaseKey se
+      if(!d) return;
       const localNotifs = getNotifications();
-      const alreadyHave = localNotifs.some(n => n.firebaseKey === child.key);
+      const alreadyHave = localNotifs.some(n=>n.firebaseKey===child.key);
       if(!alreadyHave) {
-        // Purani same-type same-from entry hato, nayi daalo
-        const filtered = localNotifs.filter(n => !(n.from===d.from && n.type===d.type && !n.firebaseKey));
-        const notif = { ...d, firebaseKey: child.key, status: d.status||'pending', read: false };
+        const notif = { ...d, firebaseKey: child.key, read: false };
+        const filtered = localNotifs.filter(n=>!(n.from===d.from && n.type===d.type));
         filtered.unshift(notif);
         saveNotifications(filtered);
         updateNotifBadge();
       }
 
-      // request_accepted → A ki following mein B ko add karo
-      if(d.type === 'request_accepted' && d.from && !following[d.from]) {
-        following[d.from] = { name: d.name || d.from, uid: d.from };
-        localStorage.setItem('dc_following', JSON.stringify(following));
-        listenUserStatus(d.from);
-        renderPeople();
-        renderChatList();
-        // Sirf toast agar UI visible hai
-        if(document.visibilityState === 'visible') {
-          toast('🎉 ' + escH(d.name||'User') + ' ne request accept ki!');
+      // AUTO-ADD: jab request_accepted aaye toh sender bhi meri following mein aa jaye
+      if(d.type === 'request_accepted' && d.from) {
+        if(!following[d.from]) {
+          following[d.from] = { name: d.name || d.from, uid: d.from };
+          localStorage.setItem('dc_following', JSON.stringify(following));
+          listenUserStatus(d.from);
+          renderPeople();
+          renderChatList();
+          toast('🎉 ' + escH(d.name||'User') + ' ab tumhara friend hai!');
         }
       }
 
-      // friend_removed → following se hataao
-      if(d.type === 'friend_removed' && d.from && following[d.from]) {
-        delete following[d.from];
-        localStorage.setItem('dc_following', JSON.stringify(following));
-        renderPeople();
-        renderChatList();
-        toast(escH(d.name||'User') + ' ne tumhe friend list se hata diya');
+      // FRIEND REMOVED: dono side se delete
+      if(d.type === 'friend_removed' && d.from) {
+        if(following[d.from]) {
+          delete following[d.from];
+          localStorage.setItem('dc_following', JSON.stringify(following));
+          renderPeople();
+          renderChatList();
+          toast(escH(d.name||'User') + ' ne tumhe friend list se hata diya');
+        }
       }
     });
   });
@@ -2708,16 +2579,13 @@ window.searchUser=function(val) {
 async function searchUser_render(uid, name, online) {
   const res=document.getElementById('searchResults');
   if(!res) return;
-  // Firebase se fresh check — stale cache pe depend nahi
+  // Check request status from Firebase
   const reqSnap = await get(ref(db, `followRequests/${uid}/${myId}`));
   const reqData = reqSnap.val();
-  // Dono direction check karo
-  const reqSnap2 = await get(ref(db, `followRequests/${myId}/${uid}`));
-  const reqData2 = reqSnap2.val();
   const blockedMe = (await get(ref(db, `blocked/${uid}/${myId}`))).val();
   const iBlockedThem = isBlocked(uid);
-  const isAccepted = !!following[uid] || (reqData && reqData.status==='accepted') || (reqData2 && reqData2.status==='accepted');
-  const isPending = !isAccepted && ((reqData && reqData.status==='pending') || (reqData2 && reqData2.status==='pending'));
+  const isAccepted = following[uid] || (reqData && reqData.status==='accepted');
+  const isPending = !isAccepted && reqData && reqData.status==='pending';
 
   let actionBtn = '';
   if(iBlockedThem) {
@@ -2956,7 +2824,13 @@ function addMsg(text,from,name,time,msgId,replyData) {
     const now=Date.now();
     if(now-_lastTap<350 && msgId) {
       clearTimeout(lpTimer);
-      startSelectMode(msgId, w);
+      e.preventDefault();
+      if(_selectMode) {
+        // Already select mode mein hai — is message ko toggle karo
+        _onMsgSelectClick.call(w, e);
+      } else {
+        startSelectMode(msgId, w);
+      }
     }
     _lastTap=now;
   });
@@ -3123,34 +2997,20 @@ function updateMsgTick(msgId,state) {
   }
 }
 
-let _currentPartnerOnline = false; // track partner online status
-
 function showTyping(typing) {
   const el=document.getElementById('chatStatus');
   if(!el) return;
-  if(typing) {
-    el.textContent='Typing...';
-    el.className='chat-hst typing';
-  } else {
-    el.textContent=_currentPartnerOnline?'Online':'Offline';
-    el.className='chat-hst'+(_currentPartnerOnline?' online':'');
-  }
+  el.textContent=typing?'Typing...':'Online';
+  el.className='chat-hst'+(typing?' typing':' online');
 }
 
 // Typing indicator send
 document.getElementById('msgInp').addEventListener('input',()=>{
   if(!currentChatId) return;
-  sendToUser(currentChatId,{type:'typing',typing:true,from:myId}).catch(()=>{});
+  sendToUser(currentChatId,{type:'typing',typing:true,from:myId});
   clearTimeout(window._typingTimer);
-  window._typingTimer=setTimeout(()=>{
-    if(currentChatId) sendToUser(currentChatId,{type:'typing',typing:false,from:myId}).catch(()=>{});
-  },2000);
+  window._typingTimer=setTimeout(()=>sendToUser(currentChatId,{type:'typing',typing:false,from:myId}),1500);
 });
-// Jab chat band ho — typing false bhejo
-function stopTypingSignal(){
-  clearTimeout(window._typingTimer);
-  if(currentChatId) sendToUser(currentChatId,{type:'typing',typing:false,from:myId}).catch(()=>{});
-}
 
 // Reply
 window.showReplyBar=function(text){
@@ -3469,8 +3329,8 @@ function showCtxMenu(data, touchY, isRight){
   if(dlItem) dlItem.style.display=data.src?'flex':'none';
   // Edit only for own text messages
   if(editItem) editItem.style.display=(data.isMe && data.text)?'flex':'none';
-  // Delete only for own messages
-  if(deleteItem) deleteItem.style.display=data.isMe?'flex':'none';
+  // Delete — sabke messages pe dikhao (apna Firebase se, dusre ka sirf locally)
+  if(deleteItem) deleteItem.style.display=data.id?'flex':'none';
   const menuH=220;
   let top=touchY-menuH-10;
   if(top<10) top=touchY+10;
@@ -3483,14 +3343,20 @@ function showCtxMenu(data, touchY, isRight){
 window.ctxDelete=async function(){
   if(!_ctxMsg||!_ctxMsg.id) return;
   document.getElementById('msgContext').classList.remove('show');
-  if(!confirm('Ye message delete karo?')) return;
-  const roomId=chatRoomId(myId,currentChatId);
-  // Firebase se delete
-  await remove(ref(db,`chats/${roomId}/messages/${_ctxMsg.id}`)).catch(()=>{});
-  // DOM se remove
-  const el=document.querySelector(`.msg-wrap[data-msgid="${_ctxMsg.id}"]`);
-  if(el) el.remove();
-  toast('Message delete ho gaya ✓');
+  const msgId = _ctxMsg.id;
+  const isMe = _ctxMsg.isMe;
+  // DOM se turant remove (smooth feel)
+  const el=document.querySelector(`.msg-wrap[data-msgid="${msgId}"]`);
+  if(el){ el.style.transition='opacity 0.2s,transform 0.2s'; el.style.opacity='0'; el.style.transform='scale(0.9)'; setTimeout(()=>el.remove(),200); }
+  // Firebase se delete — apna message full delete, dusre ka sirf local
+  if(isMe) {
+    const roomId=chatRoomId(myId,currentChatId);
+    await remove(ref(db,`chats/${roomId}/messages/${msgId}`)).catch(()=>{});
+    toast('Message delete ho gaya ✓');
+  } else {
+    // Dusre ka message sirf locally hatao (Firebase se delete ka permission nahi)
+    toast('Message hata diya ✓');
+  }
 };
 window.ctxReply=function(){
   if(_ctxMsg){replyTo={text:_ctxMsg.text||'',msgId:_ctxMsg.id};showReplyBar(_ctxMsg.text||'');}
@@ -3573,13 +3439,14 @@ function startSelectMode(msgId, msgWrap) {
   _selectedMsgIds.add(msgId);
   msgWrap.style.outline = '2px solid var(--chat-accent)';
   msgWrap.style.borderRadius = '18px';
-  msgWrap.style.opacity = '0.75';
+  msgWrap.style.opacity = '0.7';
+  msgWrap.style.background = 'rgba(255,107,0,0.08)';
   document.querySelectorAll('.msg-wrap[data-msgid]').forEach(w => {
     w.style.cursor = 'pointer';
     w.addEventListener('click', _onMsgSelectClick);
   });
   _showSelectBar();
-  toast('Messages select karo, phir Delete tap karo');
+  if(navigator.vibrate) navigator.vibrate(30);
 }
 
 function _showSelectBar() {
@@ -3587,11 +3454,11 @@ function _showSelectBar() {
   if(!bar) {
     bar = document.createElement('div');
     bar.id = 'selectDeleteBar';
-    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(20,20,20,0.97);border-top:1px solid #ff4444;padding:12px 16px max(20px,env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;z-index:300;';
+    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(13,13,13,0.98);border-top:2px solid #ff4444;padding:14px 20px max(22px,env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;z-index:300;backdrop-filter:blur(10px);animation:slideUp 0.2s ease;';
     bar.innerHTML = `
-      <button onclick="cancelSelectMode()" style="background:none;border:1px solid var(--chat-border);color:var(--chat-muted);border-radius:20px;padding:8px 16px;font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif;">✕ Cancel</button>
-      <span id="selectCount" style="font-size:13px;color:var(--chat-text);font-weight:600;">1 selected</span>
-      <button onclick="deleteSelectedMsgs()" style="background:#ff4444;border:none;color:#fff;border-radius:20px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">🗑️ Delete</button>`;
+      <button onclick="cancelSelectMode()" style="background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);color:#ccc;border-radius:22px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;display:flex;align-items:center;gap:6px;">✕ Cancel</button>
+      <span id="selectCount" style="font-size:14px;color:#fff;font-weight:700;letter-spacing:0.3px;">1 selected</span>
+      <button onclick="deleteSelectedMsgs()" style="background:linear-gradient(135deg,#ff3333,#cc0000);border:none;color:#fff;border-radius:22px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;display:flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(255,50,50,0.4);">🗑️ Delete</button>`;
     document.body.appendChild(bar);
   }
   bar.style.display = 'flex';
@@ -3612,11 +3479,14 @@ function _onMsgSelectClick(e) {
     _selectedMsgIds.delete(msgId);
     this.style.outline = '';
     this.style.opacity = '1';
+    this.style.background = '';
   } else {
     _selectedMsgIds.add(msgId);
     this.style.outline = '2px solid var(--chat-accent)';
-    this.style.opacity = '0.75';
+    this.style.opacity = '0.7';
     this.style.borderRadius = '18px';
+    this.style.background = 'rgba(255,107,0,0.08)';
+    if(navigator.vibrate) navigator.vibrate(15);
   }
   _updateSelectCount();
 }
@@ -3628,24 +3498,25 @@ window.cancelSelectMode = function() {
     w.style.cursor = '';
     w.style.opacity = '1';
     w.style.outline = '';
+    w.style.background = '';
     w.removeEventListener('click', _onMsgSelectClick);
   });
   const bar = document.getElementById('selectDeleteBar');
-  if(bar) bar.style.display = 'none';
+  if(bar) { bar.style.animation='slideDown 0.15s ease'; setTimeout(()=>bar.style.display='none',140); }
 };
 
 window.deleteSelectedMsgs = async function() {
   if(_selectedMsgIds.size === 0) { toast('Koi message select nahi'); return; }
-  if(!confirm(_selectedMsgIds.size + ' message(s) delete karo?')) return;
   const roomId = chatRoomId(myId, currentChatId);
   const ids = [..._selectedMsgIds];
   cancelSelectMode();
   for(const msgId of ids) {
-    remove(ref(db, `chats/${roomId}/messages/${msgId}`)).catch(()=>{});
     const el = document.querySelector(`.msg-wrap[data-msgid="${msgId}"]`);
-    if(el) el.remove();
+    if(el){ el.style.transition='opacity 0.2s,transform 0.2s'; el.style.opacity='0'; el.style.transform='scale(0.85)'; setTimeout(()=>el.remove(),200); }
+    // Firebase se delete try karo (apne messages) — dusre ka local se hi hata
+    remove(ref(db, `chats/${roomId}/messages/${msgId}`)).catch(()=>{});
   }
-  toast(ids.length + ' message(s) delete ho gaye ✓');
+  setTimeout(()=>toast(ids.length + ' message(s) delete ho gaye ✓'), 250);
 };
 
 // ===== APP START =====
