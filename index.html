@@ -10,7 +10,6 @@
 <link rel="manifest" href="/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 :root {
   --cream: #f7f0e2;
   --cream2: #ede3cc;
@@ -32,6 +31,8 @@
   --chat-text: #f0f0f0;
   --chat-muted: #666;
 }
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--brown2); height:100dvh; overflow:hidden; }
@@ -373,7 +374,7 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
   box-shadow:0 4px 14px rgba(200,65,10,0.3);
 }
 .modal-close {
-  width:100%; margin-top:12px; padding:13px; border-radius:16px;
+  width:100%; margin-top:12px; padding:13px; border-radius:16px; border:none;
   background:rgba(200,150,10,0.1); color:var(--brown); font-size:14px;
   cursor:pointer; font-family:'Poppins',sans-serif;
   border:1.5px solid rgba(200,150,10,0.2);
@@ -601,8 +602,6 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 /* Long press delete popup */
 .lp-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; display:flex; align-items:center; justify-content:center; animation:fadeIn 0.15s ease; }
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-@keyframes slideUp { from{transform:translateY(100%);opacity:0} to{transform:translateY(0);opacity:1} }
-@keyframes slideDown { from{transform:translateY(0);opacity:1} to{transform:translateY(100%);opacity:0} }
 .lp-popup { background:var(--chat-surface); border:1px solid var(--chat-border); border-radius:20px; padding:8px; min-width:220px; overflow:hidden; }
 .lp-name { font-size:13px; color:var(--chat-muted); padding:10px 16px 8px; border-bottom:1px solid var(--chat-border); }
 .lp-btn { display:flex; align-items:center; gap:12px; padding:14px 16px; font-size:15px; cursor:pointer; border-radius:12px; transition:background 0.15s; color:var(--chat-text); font-family:'Poppins',sans-serif; border:none; background:none; width:100%; text-align:left; }
@@ -1733,14 +1732,10 @@ function initFirebase() {
     localStorage.setItem('dc_my_id', myId);
   }
 
-  // Set online — update karo (overwrite nahi) taaki avatar/displayId safe rahe
+  // Set online
   const meRef=ref(db,`users/${myId}`);
-  update(meRef,{ name:myName, online:true, ts:Date.now(), icon:myIcon }).catch(()=>{});
+  set(meRef,{ name:myName, online:true, ts:Date.now(), icon:myIcon });
   onDisconnect(meRef).update({ online:false });
-  // Visibility change pe bhi online/offline update karo
-  document.addEventListener('visibilitychange', ()=>{
-    update(meRef, { online: !document.hidden }).catch(()=>{});
-  });
 
   // Listen for messages
   onValue(ref(db,`inbox/${myId}`),snap=>{
@@ -1777,15 +1772,13 @@ function initFirebase() {
 
 function handleInboxMsg(d) {
   if(d.type==='newmsg') {
+    // Sirf chat list update karo — koi notification nahi
+    // Chat list mein lastMsg update karo
     updateChatListLocal(d.from, d.name||d.from, d.text||'[Media]', '');
+    // Agar ye chat abhi open nahi hai → unread mark karo
     if(currentChatId !== d.from) {
       markUnread(d.from);
-      // Badge turant update karo
-      const badge = document.getElementById('bnBadge');
-      if(badge) { const tot=getTotalUnread(); badge.style.display=tot>0?'block':'none'; badge.textContent=''; }
     }
-    // Agar ye chat abhi open hai toh listenChat already chal raha hai — Firebase real-time update karega
-    // Agar nahi hai — chatList update ho gaya
     renderChatList();
   } else if(d.type==='seen') {
     updateMsgTick(d.msgId,'seen');
@@ -2100,9 +2093,13 @@ function renderChatList() {
     wrap.appendChild(inner);
     body.appendChild(wrap);
 
-    // Online status listener — sirf dot update, chat header listenUserStatus handle karega
+    // Online status listener
     if(!_onlineListeners.has(uid)) {
-      listenUserStatus(uid);
+      const unsub = onValue(ref(db,`users/${uid}/online`),s=>{
+        const el=document.getElementById('online-'+uid);
+        if(el) el.style.display=s.val()?'block':'none';
+      });
+      _onlineListeners.set(uid, unsub);
     }
   });
   const badge=document.getElementById('bnBadge');
@@ -2160,13 +2157,11 @@ window.openChat=async function(uid,name) {
     }
   });
 
-  // Online status — listenUserStatus use karo (duplicate avoid + chat header update dono)
-  listenUserStatus(uid);
-  // Abhi ka status turant dikhao
-  get(ref(db,`users/${uid}/online`)).then(s=>{
+  // Online status
+  onValue(ref(db,`users/${uid}/online`),s=>{
     const stEl=document.getElementById('chatStatus');
-    if(stEl && currentChatId===uid){ stEl.textContent=s.val()?'Online':'Offline'; stEl.className='chat-hst'+(s.val()?' online':''); }
-  }).catch(()=>{});
+    if(stEl){ stEl.textContent=s.val()?'Online':'Offline'; stEl.className='chat-hst'+(s.val()?' online':''); }
+  });
 
   showScreen('chatScreen');
 }
@@ -2198,22 +2193,7 @@ window.closeChatScreen=function(){
 };
 
 function listenUserStatus(uid) {
-  if(_onlineListeners.has(uid)) return;
-  const unsub = onValue(ref(db, `users/${uid}/online`), snap => {
-    const isOnline = snap.val() === true;
-    // Chat list dot update
-    const dotEl = document.getElementById('online-' + uid);
-    if(dotEl) dotEl.style.display = isOnline ? 'block' : 'none';
-    // Chat header update (sirf agar ye chat open hai)
-    if(currentChatId === uid) {
-      const stEl = document.getElementById('chatStatus');
-      if(stEl && !stEl.textContent.includes('Typing')) {
-        stEl.textContent = isOnline ? 'Online' : 'Offline';
-        stEl.className = 'chat-hst' + (isOnline ? ' online' : '');
-      }
-    }
-  });
-  _onlineListeners.set(uid, unsub);
+  onValue(ref(db,`users/${uid}/online`),()=>{});
 }
 
 // ===== FOLLOW REQUEST SYSTEM =====
@@ -2302,8 +2282,8 @@ window.renderNotifications = function() {
           <div class="notif-text"><strong>${escH(n.name)}</strong> sent you a follow request</div>
           <div class="notif-time">${timeAgo}</div>
           ${n.status==='pending' ? `<div class="notif-actions">
-            <button class="notif-accept-btn" onclick="acceptFollowRequest('${n.from}','${escH(n.name)}','${n.firebaseKey||n.id}')">✅ Accept</button>
-            <button class="notif-reject-btn" onclick="rejectFollowRequest('${n.from}','${escH(n.name)}','${n.firebaseKey||n.id}')">❌ Reject</button>
+            <button class="notif-accept-btn" onclick="acceptFollowRequest('${n.from}','${escH(n.name)}','${n.id}')">✅ Accept</button>
+            <button class="notif-reject-btn" onclick="rejectFollowRequest('${n.from}','${escH(n.name)}','${n.id}')">❌ Reject</button>
           </div>` : `<div style="font-size:12px;margin-top:6px;color:${n.status==='accepted'?'#4CAF50':'var(--chat-muted)'};">${n.status==='accepted'?'✅ Accepted':'❌ Rejected'}</div>`}
         </div>`;
     } else if(n.type === 'request_accepted') {
@@ -2426,7 +2406,7 @@ window.rejectFollowRequest = async function(fromUid, fromName, notifId) {
   });
   // Update local notif
   const notifs = getNotifications();
-  const idx = notifs.findIndex(n=>n.firebaseKey===notifId||n.id===notifId);
+  const idx = notifs.findIndex(n=>n.id===notifId);
   if(idx>=0) { notifs[idx].status='rejected'; saveNotifications(notifs); }
   toast(fromName + ' request rejected ❌');
   renderNotifications();
@@ -2718,11 +2698,10 @@ function renderPeople() {
           <button onclick="showUserOptions('${u.uid}','${escH(u.name)}')" class="u-more-btn">⋮</button>
         </div>`;
       fl.appendChild(div);
-      listenUserStatus(u.uid);
-      get(ref(db,`users/${u.uid}/online`)).then(s=>{
+      onValue(ref(db,`users/${u.uid}/online`),s=>{
         const el=document.getElementById('fst-'+u.uid);
         if(el){ el.textContent=s.val()?'🟢 Online':'⚫ Offline'; el.className='u-status'+(s.val()?' online':''); }
-      }).catch(()=>{});
+      });
     });
   }
 
@@ -2844,13 +2823,7 @@ function addMsg(text,from,name,time,msgId,replyData) {
     const now=Date.now();
     if(now-_lastTap<350 && msgId) {
       clearTimeout(lpTimer);
-      e.preventDefault();
-      if(_selectMode) {
-        // Already select mode mein hai — is message ko toggle karo
-        _onMsgSelectClick.call(w, e);
-      } else {
-        startSelectMode(msgId, w);
-      }
+      startSelectMode(msgId, w);
     }
     _lastTap=now;
   });
@@ -3349,8 +3322,8 @@ function showCtxMenu(data, touchY, isRight){
   if(dlItem) dlItem.style.display=data.src?'flex':'none';
   // Edit only for own text messages
   if(editItem) editItem.style.display=(data.isMe && data.text)?'flex':'none';
-  // Delete — sabke messages pe dikhao (apna Firebase se, dusre ka sirf locally)
-  if(deleteItem) deleteItem.style.display=data.id?'flex':'none';
+  // Delete only for own messages
+  if(deleteItem) deleteItem.style.display=data.isMe?'flex':'none';
   const menuH=220;
   let top=touchY-menuH-10;
   if(top<10) top=touchY+10;
@@ -3363,13 +3336,13 @@ function showCtxMenu(data, touchY, isRight){
 window.ctxDelete=async function(){
   if(!_ctxMsg||!_ctxMsg.id) return;
   document.getElementById('msgContext').classList.remove('show');
-  const msgId = _ctxMsg.id;
-  // DOM se turant remove (smooth feel)
-  const el=document.querySelector(`.msg-wrap[data-msgid="${msgId}"]`);
-  if(el){ el.style.transition='opacity 0.2s,transform 0.2s'; el.style.opacity='0'; el.style.transform='scale(0.9)'; setTimeout(()=>el.remove(),200); }
-  // Firebase se delete — dono taraf se (apna aur dusre ka dono)
+  if(!confirm('Ye message delete karo?')) return;
   const roomId=chatRoomId(myId,currentChatId);
-  await remove(ref(db,`chats/${roomId}/messages/${msgId}`)).catch(()=>{});
+  // Firebase se delete
+  await remove(ref(db,`chats/${roomId}/messages/${_ctxMsg.id}`)).catch(()=>{});
+  // DOM se remove
+  const el=document.querySelector(`.msg-wrap[data-msgid="${_ctxMsg.id}"]`);
+  if(el) el.remove();
   toast('Message delete ho gaya ✓');
 };
 window.ctxReply=function(){
@@ -3453,14 +3426,13 @@ function startSelectMode(msgId, msgWrap) {
   _selectedMsgIds.add(msgId);
   msgWrap.style.outline = '2px solid var(--chat-accent)';
   msgWrap.style.borderRadius = '18px';
-  msgWrap.style.opacity = '0.7';
-  msgWrap.style.background = 'rgba(255,107,0,0.08)';
+  msgWrap.style.opacity = '0.75';
   document.querySelectorAll('.msg-wrap[data-msgid]').forEach(w => {
     w.style.cursor = 'pointer';
     w.addEventListener('click', _onMsgSelectClick);
   });
   _showSelectBar();
-  if(navigator.vibrate) navigator.vibrate(30);
+  toast('Messages select karo, phir Delete tap karo');
 }
 
 function _showSelectBar() {
@@ -3468,11 +3440,11 @@ function _showSelectBar() {
   if(!bar) {
     bar = document.createElement('div');
     bar.id = 'selectDeleteBar';
-    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(13,13,13,0.98);border-top:2px solid #ff4444;padding:14px 20px max(22px,env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;z-index:300;backdrop-filter:blur(10px);animation:slideUp 0.2s ease;';
+    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(20,20,20,0.97);border-top:1px solid #ff4444;padding:12px 16px max(20px,env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;z-index:300;';
     bar.innerHTML = `
-      <button onclick="cancelSelectMode()" style="background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);color:#ccc;border-radius:22px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;display:flex;align-items:center;gap:6px;">✕ Cancel</button>
-      <span id="selectCount" style="font-size:14px;color:#fff;font-weight:700;letter-spacing:0.3px;">1 selected</span>
-      <button onclick="deleteSelectedMsgs()" style="background:linear-gradient(135deg,#ff3333,#cc0000);border:none;color:#fff;border-radius:22px;padding:10px 20px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Poppins',sans-serif;display:flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(255,50,50,0.4);">🗑️ Delete</button>`;
+      <button onclick="cancelSelectMode()" style="background:none;border:1px solid var(--chat-border);color:var(--chat-muted);border-radius:20px;padding:8px 16px;font-size:13px;cursor:pointer;font-family:'Poppins',sans-serif;">✕ Cancel</button>
+      <span id="selectCount" style="font-size:13px;color:var(--chat-text);font-weight:600;">1 selected</span>
+      <button onclick="deleteSelectedMsgs()" style="background:#ff4444;border:none;color:#fff;border-radius:20px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">🗑️ Delete</button>`;
     document.body.appendChild(bar);
   }
   bar.style.display = 'flex';
@@ -3493,14 +3465,11 @@ function _onMsgSelectClick(e) {
     _selectedMsgIds.delete(msgId);
     this.style.outline = '';
     this.style.opacity = '1';
-    this.style.background = '';
   } else {
     _selectedMsgIds.add(msgId);
     this.style.outline = '2px solid var(--chat-accent)';
-    this.style.opacity = '0.7';
+    this.style.opacity = '0.75';
     this.style.borderRadius = '18px';
-    this.style.background = 'rgba(255,107,0,0.08)';
-    if(navigator.vibrate) navigator.vibrate(15);
   }
   _updateSelectCount();
 }
@@ -3512,25 +3481,24 @@ window.cancelSelectMode = function() {
     w.style.cursor = '';
     w.style.opacity = '1';
     w.style.outline = '';
-    w.style.background = '';
     w.removeEventListener('click', _onMsgSelectClick);
   });
   const bar = document.getElementById('selectDeleteBar');
-  if(bar) { bar.style.animation='slideDown 0.15s ease'; setTimeout(()=>bar.style.display='none',140); }
+  if(bar) bar.style.display = 'none';
 };
 
 window.deleteSelectedMsgs = async function() {
   if(_selectedMsgIds.size === 0) { toast('Koi message select nahi'); return; }
+  if(!confirm(_selectedMsgIds.size + ' message(s) delete karo?')) return;
   const roomId = chatRoomId(myId, currentChatId);
   const ids = [..._selectedMsgIds];
   cancelSelectMode();
   for(const msgId of ids) {
-    const el = document.querySelector(`.msg-wrap[data-msgid="${msgId}"]`);
-    if(el){ el.style.transition='opacity 0.2s,transform 0.2s'; el.style.opacity='0'; el.style.transform='scale(0.85)'; setTimeout(()=>el.remove(),200); }
-    // Firebase se delete — apna aur dusre ka dono
     remove(ref(db, `chats/${roomId}/messages/${msgId}`)).catch(()=>{});
+    const el = document.querySelector(`.msg-wrap[data-msgid="${msgId}"]`);
+    if(el) el.remove();
   }
-  setTimeout(()=>toast(ids.length + ' message(s) delete ho gaye ✓'), 250);
+  toast(ids.length + ' message(s) delete ho gaye ✓');
 };
 
 // ===== APP START =====
