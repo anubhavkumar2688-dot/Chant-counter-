@@ -1784,6 +1784,8 @@ function handleInboxMsg(d) {
       const badge = document.getElementById('bnBadge');
       if(badge) { const tot=getTotalUnread(); badge.style.display=tot>0?'block':'none'; badge.textContent=''; }
     }
+    // Agar ye chat abhi open hai toh listenChat already chal raha hai — Firebase real-time update karega
+    // Agar nahi hai — chatList update ho gaya
     renderChatList();
   } else if(d.type==='seen') {
     updateMsgTick(d.msgId,'seen');
@@ -2098,13 +2100,9 @@ function renderChatList() {
     wrap.appendChild(inner);
     body.appendChild(wrap);
 
-    // Online status listener
+    // Online status listener — sirf dot update, chat header listenUserStatus handle karega
     if(!_onlineListeners.has(uid)) {
-      const unsub = onValue(ref(db,`users/${uid}/online`),s=>{
-        const el=document.getElementById('online-'+uid);
-        if(el) el.style.display=s.val()?'block':'none';
-      });
-      _onlineListeners.set(uid, unsub);
+      listenUserStatus(uid);
     }
   });
   const badge=document.getElementById('bnBadge');
@@ -2200,13 +2198,13 @@ window.closeChatScreen=function(){
 };
 
 function listenUserStatus(uid) {
-  if(_onlineListeners.has(uid)) return; // duplicate prevent
+  if(_onlineListeners.has(uid)) return;
   const unsub = onValue(ref(db, `users/${uid}/online`), snap => {
     const isOnline = snap.val() === true;
     // Chat list dot update
     const dotEl = document.getElementById('online-' + uid);
     if(dotEl) dotEl.style.display = isOnline ? 'block' : 'none';
-    // Chat header status update (agar ye hi chat open hai)
+    // Chat header update (sirf agar ye chat open hai)
     if(currentChatId === uid) {
       const stEl = document.getElementById('chatStatus');
       if(stEl && !stEl.textContent.includes('Typing')) {
@@ -2720,10 +2718,11 @@ function renderPeople() {
           <button onclick="showUserOptions('${u.uid}','${escH(u.name)}')" class="u-more-btn">⋮</button>
         </div>`;
       fl.appendChild(div);
-      onValue(ref(db,`users/${u.uid}/online`),s=>{
+      listenUserStatus(u.uid);
+      get(ref(db,`users/${u.uid}/online`)).then(s=>{
         const el=document.getElementById('fst-'+u.uid);
         if(el){ el.textContent=s.val()?'🟢 Online':'⚫ Offline'; el.className='u-status'+(s.val()?' online':''); }
-      });
+      }).catch(()=>{});
     });
   }
 
