@@ -1733,10 +1733,14 @@ function initFirebase() {
     localStorage.setItem('dc_my_id', myId);
   }
 
-  // Set online
+  // Set online — update karo (overwrite nahi) taaki avatar/displayId safe rahe
   const meRef=ref(db,`users/${myId}`);
-  set(meRef,{ name:myName, online:true, ts:Date.now(), icon:myIcon });
+  update(meRef,{ name:myName, online:true, ts:Date.now(), icon:myIcon }).catch(()=>{});
   onDisconnect(meRef).update({ online:false });
+  // Visibility change pe bhi online/offline update karo
+  document.addEventListener('visibilitychange', ()=>{
+    update(meRef, { online: !document.hidden }).catch(()=>{});
+  });
 
   // Listen for messages
   onValue(ref(db,`inbox/${myId}`),snap=>{
@@ -1773,12 +1777,12 @@ function initFirebase() {
 
 function handleInboxMsg(d) {
   if(d.type==='newmsg') {
-    // Sirf chat list update karo — koi notification nahi
-    // Chat list mein lastMsg update karo
     updateChatListLocal(d.from, d.name||d.from, d.text||'[Media]', '');
-    // Agar ye chat abhi open nahi hai → unread mark karo
     if(currentChatId !== d.from) {
       markUnread(d.from);
+      // Badge turant update karo
+      const badge = document.getElementById('bnBadge');
+      if(badge) { const tot=getTotalUnread(); badge.style.display=tot>0?'block':'none'; badge.textContent=''; }
     }
     renderChatList();
   } else if(d.type==='seen') {
@@ -2158,11 +2162,13 @@ window.openChat=async function(uid,name) {
     }
   });
 
-  // Online status
-  onValue(ref(db,`users/${uid}/online`),s=>{
+  // Online status — listenUserStatus use karo (duplicate avoid + chat header update dono)
+  listenUserStatus(uid);
+  // Abhi ka status turant dikhao
+  get(ref(db,`users/${uid}/online`)).then(s=>{
     const stEl=document.getElementById('chatStatus');
-    if(stEl){ stEl.textContent=s.val()?'Online':'Offline'; stEl.className='chat-hst'+(s.val()?' online':''); }
-  });
+    if(stEl && currentChatId===uid){ stEl.textContent=s.val()?'Online':'Offline'; stEl.className='chat-hst'+(s.val()?' online':''); }
+  }).catch(()=>{});
 
   showScreen('chatScreen');
 }
@@ -2194,7 +2200,22 @@ window.closeChatScreen=function(){
 };
 
 function listenUserStatus(uid) {
-  onValue(ref(db,`users/${uid}/online`),()=>{});
+  if(_onlineListeners.has(uid)) return; // duplicate prevent
+  const unsub = onValue(ref(db, `users/${uid}/online`), snap => {
+    const isOnline = snap.val() === true;
+    // Chat list dot update
+    const dotEl = document.getElementById('online-' + uid);
+    if(dotEl) dotEl.style.display = isOnline ? 'block' : 'none';
+    // Chat header status update (agar ye hi chat open hai)
+    if(currentChatId === uid) {
+      const stEl = document.getElementById('chatStatus');
+      if(stEl && !stEl.textContent.includes('Typing')) {
+        stEl.textContent = isOnline ? 'Online' : 'Offline';
+        stEl.className = 'chat-hst' + (isOnline ? ' online' : '');
+      }
+    }
+  });
+  _onlineListeners.set(uid, unsub);
 }
 
 // ===== FOLLOW REQUEST SYSTEM =====
@@ -2283,8 +2304,8 @@ window.renderNotifications = function() {
           <div class="notif-text"><strong>${escH(n.name)}</strong> sent you a follow request</div>
           <div class="notif-time">${timeAgo}</div>
           ${n.status==='pending' ? `<div class="notif-actions">
-            <button class="notif-accept-btn" onclick="acceptFollowRequest('${n.from}','${escH(n.name)}','${n.id}')">✅ Accept</button>
-            <button class="notif-reject-btn" onclick="rejectFollowRequest('${n.from}','${escH(n.name)}','${n.id}')">❌ Reject</button>
+            <button class="notif-accept-btn" onclick="acceptFollowRequest('${n.from}','${escH(n.name)}','${n.firebaseKey||n.id}')">✅ Accept</button>
+            <button class="notif-reject-btn" onclick="rejectFollowRequest('${n.from}','${escH(n.name)}','${n.firebaseKey||n.id}')">❌ Reject</button>
           </div>` : `<div style="font-size:12px;margin-top:6px;color:${n.status==='accepted'?'#4CAF50':'var(--chat-muted)'};">${n.status==='accepted'?'✅ Accepted':'❌ Rejected'}</div>`}
         </div>`;
     } else if(n.type === 'request_accepted') {
@@ -2407,7 +2428,7 @@ window.rejectFollowRequest = async function(fromUid, fromName, notifId) {
   });
   // Update local notif
   const notifs = getNotifications();
-  const idx = notifs.findIndex(n=>n.id===notifId);
+  const idx = notifs.findIndex(n=>n.firebaseKey===notifId||n.id===notifId);
   if(idx>=0) { notifs[idx].status='rejected'; saveNotifications(notifs); }
   toast(fromName + ' request rejected ❌');
   renderNotifications();
