@@ -3344,19 +3344,13 @@ window.ctxDelete=async function(){
   if(!_ctxMsg||!_ctxMsg.id) return;
   document.getElementById('msgContext').classList.remove('show');
   const msgId = _ctxMsg.id;
-  const isMe = _ctxMsg.isMe;
   // DOM se turant remove (smooth feel)
   const el=document.querySelector(`.msg-wrap[data-msgid="${msgId}"]`);
   if(el){ el.style.transition='opacity 0.2s,transform 0.2s'; el.style.opacity='0'; el.style.transform='scale(0.9)'; setTimeout(()=>el.remove(),200); }
-  // Firebase se delete — apna message full delete, dusre ka sirf local
-  if(isMe) {
-    const roomId=chatRoomId(myId,currentChatId);
-    await remove(ref(db,`chats/${roomId}/messages/${msgId}`)).catch(()=>{});
-    toast('Message delete ho gaya ✓');
-  } else {
-    // Dusre ka message sirf locally hatao (Firebase se delete ka permission nahi)
-    toast('Message hata diya ✓');
-  }
+  // Firebase se delete — dono taraf se (apna aur dusre ka dono)
+  const roomId=chatRoomId(myId,currentChatId);
+  await remove(ref(db,`chats/${roomId}/messages/${msgId}`)).catch(()=>{});
+  toast('Message delete ho gaya ✓');
 };
 window.ctxReply=function(){
   if(_ctxMsg){replyTo={text:_ctxMsg.text||'',msgId:_ctxMsg.id};showReplyBar(_ctxMsg.text||'');}
@@ -3513,7 +3507,7 @@ window.deleteSelectedMsgs = async function() {
   for(const msgId of ids) {
     const el = document.querySelector(`.msg-wrap[data-msgid="${msgId}"]`);
     if(el){ el.style.transition='opacity 0.2s,transform 0.2s'; el.style.opacity='0'; el.style.transform='scale(0.85)'; setTimeout(()=>el.remove(),200); }
-    // Firebase se delete try karo (apne messages) — dusre ka local se hi hata
+    // Firebase se delete — apna aur dusre ka dono
     remove(ref(db, `chats/${roomId}/messages/${msgId}`)).catch(()=>{});
   }
   setTimeout(()=>toast(ids.length + ' message(s) delete ho gaye ✓'), 250);
