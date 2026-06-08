@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Daily Chant</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#f5efe0">
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="./manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
@@ -1942,6 +1943,9 @@ function listenChat(uid) {
 function _renderMsg(d, key, uid, roomId, fromCache=false) {
   const msgsArea = document.getElementById('msgsArea');
   const isChatOpen = (currentChatId === uid);
+
+  // Block check — blocked user ke messages render mat karo
+  if(d.from && d.from !== myId && isBlocked(d.from)) return;
   if(d.type==='chat'||!d.type) {
     addMsg(d.text, d.from, d.name, d.time, key, d.replyTo||null);
     if(d.from===myId) {
@@ -2534,14 +2538,19 @@ function listenNotifications() {
         else if(d.type === 'friend_removed') toast('👋 ' + nm + ' removed you from friends');
       }
 
-      // AUTO-ADD: request accepted — add to friends
+      // AUTO-ADD: request accepted — add to friends (sirf agar Firebase mein bhi exist kare)
       if(d.type === 'request_accepted' && d.from) {
         if(!following[d.from]) {
-          following[d.from] = { name: d.name || d.from, uid: d.from };
-          localStorage.setItem('dc_following', JSON.stringify(following));
-          listenUserStatus(d.from);
-          renderPeople();
-          renderChatList();
+          // Firebase se verify karo — agar userFollowing mein hai tabhi add karo
+          get(ref(db, `userFollowing/${myId}/${d.from}`)).then(snap => {
+            if(snap.exists()) {
+              following[d.from] = { name: d.name || d.from, uid: d.from };
+              localStorage.setItem('dc_following', JSON.stringify(following));
+              listenUserStatus(d.from);
+              renderPeople();
+              renderChatList();
+            }
+          }).catch(()=>{});
         }
       }
 
@@ -2726,6 +2735,11 @@ window.unfollowUser = async function(uid, name) {
   await set(ref(db, `notifications/${uid}/${myId}_fremoved`), {
     type: 'friend_removed', from: myId, name: myName, ts: Date.now(), read: false
   }).catch(()=>{});
+
+  // 5. Purane request_accepted notifications Firebase se delete karo
+  //    Taaki listenNotifications dobara following mein add na kare
+  set(ref(db, `notifications/${myId}/${uid}_acc`), null).catch(()=>{});
+  set(ref(db, `notifications/${uid}/${myId}_acc`), null).catch(()=>{});
 
   toast(name + ' removed from friends ✓');
   renderPeople();
