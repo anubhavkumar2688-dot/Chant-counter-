@@ -932,18 +932,20 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
   </div>
 </div>
 
-<!-- PEOPLE / FRIENDS SCREEN -->
+<!-- PEOPLE SCREEN -->
 <div class="screen" id="peopleScreen">
   <div class="people-header">
-    <div class="people-title">Friends</div>
-    <div style="font-size:11px;color:var(--chat-muted);margin:4px 0 6px;">Settings mein apna ID dhundho → Share karo → Woh ID se search karke Add Friend karein</div>
-    <input class="search-bar" id="searchBar" placeholder="🔍 Friend ka 6-letter ID daalo (e.g. AB12XY)..." 
+    <div class="people-title">People</div>
+    <div style="font-size:11px;color:var(--chat-muted);margin:4px 0 6px;">Find your ID in Settings → Share with friends → They search and follow you here</div>
+    <input class="search-bar" id="searchBar" placeholder="🔍 Enter friend's 6-letter ID (e.g. AB12XY)..." 
       oninput="searchUser(this.value)" autocomplete="off" autocorrect="off" spellcheck="false"
       style="text-transform:uppercase" maxlength="6">
   </div>
   <div class="people-body" id="peopleBody">
     <div id="searchResults"></div>
+    <div class="section-label">Following</div>
     <div id="followingList"></div>
+
   </div>
 </div>
 
@@ -1205,7 +1207,7 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
   </div>
   <div class="bn-item" id="bn-people" onclick="navTo('peopleScreen')">
     <div class="bn-icon">👥</div>
-    <span>Friends</span>
+    <span>People</span>
   </div>
   <div class="bn-item" id="bn-settings" onclick="navTo('settingsScreen')">
     <div class="bn-icon">⚙️</div>
@@ -1555,8 +1557,6 @@ function initMain() {
 
   // Logout-login ke baad Firebase se fresh following sync karo
   setTimeout(syncFollowingFromFirebase, 1500);
-  // Blocked list bhi Firebase se sync karo
-  setTimeout(syncBlockedFromFirebase, 2000);
 }
 
 // Firebase userFollowing se latest friends pull karke local sync karo
@@ -1579,35 +1579,6 @@ async function syncFollowingFromFirebase() {
       Object.keys(following).forEach(uid => listenUserStatus(uid));
       renderPeople();
       renderChatList();
-    }
-  } catch(e) { /* silent */ }
-}
-
-// Firebase blocked se latest blocked list sync karo
-async function syncBlockedFromFirebase() {
-  if(!myId) return;
-  try {
-    const snap = await get(ref(db, `blocked/${myId}`));
-    const localBlocked = getBlockedList();
-    let changed = false;
-    if(snap.exists()) {
-      snap.forEach(child => {
-        if(child.val() && !localBlocked[child.key]) {
-          localBlocked[child.key] = true;
-          changed = true;
-        }
-      });
-    }
-    // Local mein hai but Firebase mein nahi — hata do (unblock sync)
-    Object.keys(localBlocked).forEach(uid => {
-      if(snap.exists() && !snap.child(uid).val()) {
-        delete localBlocked[uid];
-        changed = true;
-      }
-    });
-    if(changed) {
-      localStorage.setItem('dc_blocked', JSON.stringify(localBlocked));
-      renderPeople();
     }
   } catch(e) { /* silent */ }
 }
@@ -2343,7 +2314,7 @@ window.renderNotifications = function() {
       inner = `
         <div class="notif-av">${avLetter}</div>
         <div class="notif-content">
-          <div class="notif-text"><strong>${escH(n.name)}</strong> sent you a follow request</div>
+          <div class="notif-text"><strong>${escH(n.name)}</strong> sent you a friend request 👋</div>
           <div class="notif-time">${timeAgo}</div>
           ${n.status==='pending' ? `<div class="notif-actions">
             <button class="notif-accept-btn" onclick="acceptFollowRequest('${n.from}','${escH(n.name)}','${n.firebaseKey||n.id}')">✅ Accept</button>
@@ -2354,15 +2325,15 @@ window.renderNotifications = function() {
       inner = `
         <div class="notif-av">${avLetter}</div>
         <div class="notif-content">
-          <div class="notif-text"><strong>${escH(n.name)}</strong> accepted your follow request! 🎉</div>
+          <div class="notif-text"><strong>${escH(n.name)}</strong> accepted your friend request! 🎉</div>
           <div class="notif-time">${timeAgo}</div>
-          <div style="margin-top:8px;"><button onclick="openChat('${n.from}','${escH(n.name)}')" style="background:linear-gradient(135deg,var(--chat-accent),#ff8c00);color:#fff;border:none;border-radius:12px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">💬 Chat Kholo</button></div>
+          <div style="margin-top:8px;"><button onclick="openChat('${n.from}','${escH(n.name)}')" style="background:linear-gradient(135deg,var(--chat-accent),#ff8c00);color:#fff;border:none;border-radius:12px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">💬 Open Chat</button></div>
         </div>`;
     } else if(n.type === 'request_rejected') {
       inner = `
-        <div class="notif-av">${avLetter}</div>
+        <div class="notif-av" style="background:rgba(244,67,54,0.15);color:#f44336;">❌</div>
         <div class="notif-content">
-          <div class="notif-text"><strong>${escH(n.name)}</strong> rejected your follow request</div>
+          <div class="notif-text"><strong>${escH(n.name)}</strong> rejected your friend request</div>
           <div class="notif-time">${timeAgo}</div>
         </div>`;
     } else if(n.type === 'blocked') {
@@ -2383,7 +2354,7 @@ window.renderNotifications = function() {
       inner = `
         <div class="notif-av sys">👋</div>
         <div class="notif-content">
-          <div class="notif-text"><strong>${escH(n.name)}</strong> ne tumhe friend list se hata diya</div>
+          <div class="notif-text"><strong>${escH(n.name)}</strong> removed you from their friends</div>
           <div class="notif-time">${timeAgo}</div>
         </div>`;
     }
@@ -2403,26 +2374,32 @@ function _timeAgo(ts) {
   return Math.floor(h/24) + ' days ago';
 }
 
-// ===== SEND FOLLOW REQUEST =====
+// ===== SEND FRIEND REQUEST =====
 window.sendFollowRequest = async function(uid, name) {
   if(!myId) return;
   if(isBlocked(uid)) { toast('You have blocked this user'); return; }
 
-  // Check if B has blocked A
+  // Check if they blocked you
   const blockedSnap = await get(ref(db, `blocked/${uid}/${myId}`));
   if(blockedSnap.val()) { toast('Cannot send request'); return; }
 
-  // Save request in Firebase: followRequests/{toUid}/{fromUid}
+  // Pehle purani request clear karo (reject ke baad phir se bhej sako)
+  await set(ref(db, `followRequests/${uid}/${myId}`), null).catch(()=>{});
+
+  // Naya fresh request save karo
   await set(ref(db, `followRequests/${uid}/${myId}`), {
     from: myId, name: myName, status: 'pending', ts: Date.now()
   });
-  // Send notification to receiver via Firebase
-  await set(ref(db, `notifications/${uid}/${myId}_freq`), {
+
+  // Unique key se notification bhejo — taaki purani overwrite na ho
+  const notifKey = myId + '_freq_' + Date.now();
+  await set(ref(db, `notifications/${uid}/${notifKey}`), {
     type: 'follow_request', from: myId, name: myName,
     status: 'pending', ts: Date.now(), read: false
   });
+
   setRequestStatus(uid, 'sent');
-  toast('Follow request sent ✓');
+  toast('Friend request sent ✓');
   renderPeople();
   renderSearchResults_fromCache(uid, name);
 };
@@ -2454,7 +2431,7 @@ window.acceptFollowRequest = async function(fromUid, fromName, notifId) {
   const idx = notifs.findIndex(n=>n.id===notifId||n.firebaseKey===notifId);
   if(idx>=0) { notifs[idx].status='accepted'; saveNotifications(notifs); }
 
-  toast(fromName + ' accepted ✅ — ab dono friends ho!');
+  toast(fromName + ' is now your friend! 🎉');
   renderNotifications();
   renderPeople();
   renderChatList();
@@ -2472,7 +2449,7 @@ window.rejectFollowRequest = async function(fromUid, fromName, notifId) {
   const notifs = getNotifications();
   const idx = notifs.findIndex(n=>n.firebaseKey===notifId||n.id===notifId);
   if(idx>=0) { notifs[idx].status='rejected'; saveNotifications(notifs); }
-  toast(fromName + ' request rejected ❌');
+  toast('Friend request rejected ❌');
   renderNotifications();
 };
 
@@ -2546,9 +2523,18 @@ function listenNotifications() {
         filtered.unshift(notif);
         saveNotifications(filtered);
         updateNotifBadge();
+
+        // Real-time toast — all English
+        const nm = escH(d.name || 'Someone');
+        if(d.type === 'follow_request')     toast('👋 ' + nm + ' sent you a friend request!');
+        else if(d.type === 'request_accepted') toast('🎉 ' + nm + ' accepted your friend request!');
+        else if(d.type === 'request_rejected') toast('❌ ' + nm + ' rejected your friend request');
+        else if(d.type === 'blocked')       toast('🚫 ' + nm + ' has blocked you');
+        else if(d.type === 'unblocked')     toast('✅ ' + nm + ' has unblocked you');
+        else if(d.type === 'friend_removed') toast('👋 ' + nm + ' removed you from friends');
       }
 
-      // AUTO-ADD: jab request_accepted aaye toh sender bhi meri following mein aa jaye
+      // AUTO-ADD: request accepted — add to friends
       if(d.type === 'request_accepted' && d.from) {
         if(!following[d.from]) {
           following[d.from] = { name: d.name || d.from, uid: d.from };
@@ -2556,18 +2542,36 @@ function listenNotifications() {
           listenUserStatus(d.from);
           renderPeople();
           renderChatList();
-          toast('🎉 ' + escH(d.name||'User') + ' ab tumhara friend hai!');
         }
       }
 
-      // FRIEND REMOVED: dono side se delete
+      // FRIEND REMOVED — remove from both sides
       if(d.type === 'friend_removed' && d.from) {
         if(following[d.from]) {
           delete following[d.from];
           localStorage.setItem('dc_following', JSON.stringify(following));
           renderPeople();
           renderChatList();
-          toast(escH(d.name||'User') + ' ne tumhe friend list se hata diya');
+        }
+      }
+
+      // BLOCKED — remove from following
+      if(d.type === 'blocked' && d.from) {
+        if(following[d.from]) {
+          delete following[d.from];
+          localStorage.setItem('dc_following', JSON.stringify(following));
+          renderPeople();
+          renderChatList();
+        }
+      }
+
+      // UNBLOCKED — add back to following
+      if(d.type === 'unblocked' && d.from) {
+        if(!following[d.from]) {
+          following[d.from] = { name: d.name || d.from, uid: d.from };
+          localStorage.setItem('dc_following', JSON.stringify(following));
+          renderPeople();
+          renderChatList();
         }
       }
     });
@@ -2660,17 +2664,14 @@ async function searchUser_render(uid, name, online) {
     actionBtn = `<button class="follow-req-btn blocked" style="cursor:default;">🚫 Blocked</button>
     <button onclick="unblockUser('${uid}','${escH(name)}')" style="background:none;border:1px solid var(--chat-border);color:var(--chat-muted);border-radius:20px;padding:8px 12px;font-size:11px;cursor:pointer;font-family:'Poppins',sans-serif;">Unblock</button>`;
   } else if(blockedMe) {
-    actionBtn = `<button class="follow-req-btn blocked" style="cursor:default;">Request N/A</button>`;
+    actionBtn = `<button class="follow-req-btn blocked" style="cursor:default;">Not Available</button>`;
   } else if(isAccepted) {
     actionBtn = `<button class="follow-req-btn accepted" onclick="openChat('${uid}','${escH(name)}')" style="cursor:pointer;">💬 Chat</button>
     <button onclick="showUserOptions('${uid}','${escH(name)}')" class="u-more-btn">⋮</button>`;
   } else if(isPending) {
-    actionBtn = `<button onclick="openChat('${uid}','${escH(name)}')" class="chat-btn" style="margin-right:6px;">💬 Chat</button>
-    <button class="follow-req-btn pending" style="cursor:default;">⏳ Pending</button>`;
+    actionBtn = `<button class="follow-req-btn pending" style="cursor:default;">⏳ Request Sent</button>`;
   } else {
-    // Koi follow nahi — phir bhi chat kar sakte hain, follow bhi kar sakte hain
-    actionBtn = `<button onclick="openChat('${uid}','${escH(name)}')" class="chat-btn" style="margin-right:6px;">💬 Chat</button>
-    <button class="follow-req-btn" onclick="sendFollowRequest('${uid}','${escH(name)}')">+ Follow</button>`;
+    actionBtn = `<button class="follow-req-btn" onclick="sendFollowRequest('${uid}','${escH(name)}')">➕ Add Friend</button>`;
   }
 
   res.innerHTML=`
@@ -2679,7 +2680,7 @@ async function searchUser_render(uid, name, online) {
       <div class="u-av">${(name||'?')[0].toUpperCase()}</div>
       <div class="u-info">
         <div class="u-name">${escH(name)}</div>
-        <div class="u-status ${online?'online':''}">${online?'Online':'Offline'}</div>
+        <div class="u-status ${online?'online':''}">${online?'🟢 Online':'⚫ Offline'}</div>
       </div>
       <div class="u-row-actions">${actionBtn}</div>
     </div>`;
@@ -2726,7 +2727,7 @@ window.unfollowUser = async function(uid, name) {
     type: 'friend_removed', from: myId, name: myName, ts: Date.now(), read: false
   }).catch(()=>{});
 
-  toast(name + ' friend list se hata diya ✓');
+  toast(name + ' removed from friends ✓');
   renderPeople();
   renderChatList();
 };
@@ -2737,97 +2738,68 @@ window.toggleFollow=function(uid,name){
 };
 
 function renderPeople() {
-  const fl = document.getElementById('followingList');
+  const fl=document.getElementById('followingList');
   if(!fl) return;
-  fl.innerHTML = '';
+  fl.innerHTML='';
 
   const blocked = getBlockedList();
   const blockedKeys = Object.keys(blocked);
   const followingKeys = Object.keys(following);
 
-  // ── Empty state ──
   if(followingKeys.length === 0 && blockedKeys.length === 0) {
-    fl.innerHTML = `
-      <div style="text-align:center;padding:40px 20px;">
-        <div style="font-size:48px;margin-bottom:12px;">👥</div>
-        <div style="color:var(--chat-text);font-size:15px;font-weight:600;">Koi friend nahi abhi</div>
-        <div style="color:var(--chat-muted);font-size:12px;margin-top:6px;line-height:1.7;">
-          Upar ID daalo aur<br><strong style="color:var(--chat-accent);">Add Friend</strong> karo
-        </div>
-      </div>`;
+    fl.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:12px 0;text-align:center;">No friends yet<br><span style="font-size:11px;">Search by ID and send a follow request</span></div>';
     return;
   }
 
   // ── FRIENDS section ──
   if(followingKeys.length > 0) {
     const friendLabel = document.createElement('div');
-    friendLabel.className = 'section-label';
-    friendLabel.innerHTML = '👥 Friends <span style="color:var(--chat-accent);font-weight:700;">' + followingKeys.length + '</span>';
+    friendLabel.className='section-label';
+    friendLabel.innerHTML='👥 Friends <span style="color:var(--chat-accent);font-weight:700;">'+followingKeys.length+'</span>';
     fl.appendChild(friendLabel);
 
-    Object.values(following).forEach(u => {
-      if(!u || !u.uid) return;
-      const div = document.createElement('div');
-      div.className = 'user-row';
-      div.innerHTML = `
+    Object.values(following).forEach(u=>{
+      const div=document.createElement('div');
+      div.className='user-row';
+      div.innerHTML=`
         <div class="u-av">${(u.name||'?')[0].toUpperCase()}</div>
         <div class="u-info">
-          <div class="u-name">${escH(u.name || u.uid)}</div>
+          <div class="u-name">${escH(u.name)}</div>
           <div class="u-status" id="fst-${u.uid}">...</div>
         </div>
         <div class="u-row-actions">
-          <button class="follow-req-btn accepted" onclick="openChat('${u.uid}','${escH(u.name||u.uid)}')">💬 Chat</button>
-          <button onclick="showUserOptions('${u.uid}','${escH(u.name||u.uid)}')" class="u-more-btn">⋮</button>
+          <button class="follow-req-btn accepted" onclick="openChat('${u.uid}','${escH(u.name)}')">💬 Chat</button>
+          <button onclick="showUserOptions('${u.uid}','${escH(u.name)}')" class="u-more-btn">⋮</button>
         </div>`;
       fl.appendChild(div);
-
-      // Online status real-time
       listenUserStatus(u.uid);
-      get(ref(db, `users/${u.uid}/online`)).then(s => {
-        const el = document.getElementById('fst-' + u.uid);
-        if(el) {
-          el.textContent = s.val() ? '🟢 Online' : '⚫ Offline';
-          el.className = 'u-status' + (s.val() ? ' online' : '');
-        }
-      }).catch(() => {});
+      get(ref(db,`users/${u.uid}/online`)).then(s=>{
+        const el=document.getElementById('fst-'+u.uid);
+        if(el){ el.textContent=s.val()?'🟢 Online':'⚫ Offline'; el.className='u-status'+(s.val()?' online':''); }
+      }).catch(()=>{});
     });
   }
 
   // ── BLOCKED section ──
   if(blockedKeys.length > 0) {
-    // Spacer
-    const spacer = document.createElement('div');
-    spacer.style.height = '8px';
-    fl.appendChild(spacer);
-
     const label = document.createElement('div');
-    label.className = 'section-label';
-    label.innerHTML = '🚫 Blocked <span style="color:#f44336;font-weight:700;">' + blockedKeys.length + '</span>';
+    label.className='section-label';
+    label.innerHTML='🚫 Blocked <span style="color:#f44336;font-weight:700;">'+blockedKeys.length+'</span>';
     fl.appendChild(label);
-
     blockedKeys.forEach(uid => {
-      const blockedData = JSON.parse(localStorage.getItem('dc_blocked_data') || '{}');
-      const chats = JSON.parse(localStorage.getItem('dc_chats') || '{}');
+      const blockedData = JSON.parse(localStorage.getItem('dc_blocked_data')||'{}');
+      const chats = JSON.parse(localStorage.getItem('dc_chats')||'{}');
       const name = blockedData[uid]?.name || chats[uid]?.name || uid;
-
       const div = document.createElement('div');
-      div.className = 'user-row';
-      div.style.opacity = '0.75';
-      div.innerHTML = `
-        <div class="u-av" style="background:rgba(100,100,100,0.25);color:var(--chat-muted);border:1.5px solid rgba(244,67,54,0.2);">${(name[0]||'?').toUpperCase()}</div>
+      div.className='user-row';
+      div.innerHTML=`
+        <div class="u-av" style="background:rgba(100,100,100,0.3);color:var(--chat-muted);">${name[0].toUpperCase()}</div>
         <div class="u-info">
           <div class="u-name" style="color:var(--chat-muted);">${escH(name)}</div>
-          <div class="u-status" style="color:#f44336;font-size:11px;">🚫 Blocked</div>
+          <div class="u-status" style="color:#f44336;">🚫 Blocked</div>
         </div>
         <div class="u-row-actions">
-          <button onclick="unblockUser('${uid}','${escH(name)}')"
-            style="background:rgba(76,175,80,0.12);border:1.5px solid rgba(76,175,80,0.4);color:#4CAF50;border-radius:20px;padding:7px 16px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;font-weight:600;transition:background 0.15s;"
-            onmousedown="this.style.background='rgba(76,175,80,0.25)'"
-            ontouchstart="this.style.background='rgba(76,175,80,0.25)'"
-            onmouseup="this.style.background='rgba(76,175,80,0.12)'"
-            ontouchend="this.style.background='rgba(76,175,80,0.12)'">
-            ✅ Unblock
-          </button>
+          <button onclick="unblockUser('${uid}','${escH(name)}')" style="background:rgba(76,175,80,0.15);border:1px solid rgba(76,175,80,0.4);color:#4CAF50;border-radius:20px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;font-weight:600;">Unblock</button>
         </div>`;
       fl.appendChild(div);
     });
