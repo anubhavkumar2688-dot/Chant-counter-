@@ -2102,7 +2102,7 @@ function renderChatList() {
         <div id="lastseen-${uid}" style="font-size:10px;color:var(--chat-muted);margin-top:1px;"></div>
       </div>
       <div class="cp-right">
-        <div class="cp-time" style="${unreadCnt?'color:var(--chat-accent);font-weight:600;':''}">${escH(c.lastTime||'')}</div>
+        <div class="cp-time cp-lastseen-time" id="lsTime-${uid}" style="${unreadCnt?'color:var(--chat-accent);font-weight:600;':''}"></div>
         ${unreadCnt?'<div class="unread-badge">New Msg</div>':'' }
       </div>`;
     av.onclick=()=>openChat(uid,c.name||uid);
@@ -2243,6 +2243,25 @@ function listenUserStatus(uid) {
     const lsEl = document.getElementById('lastseen-' + uid);
     if(lsEl) {
       lsEl.textContent = isOnline ? '' : (lastSeen ? 'Last seen ' + _timeAgo(lastSeen) : '');
+    }
+    // cp-right mein time update karo
+    const lsTimeEl = document.getElementById('lsTime-' + uid);
+    if(lsTimeEl) {
+      if(isOnline) {
+        lsTimeEl.textContent = 'Online';
+        lsTimeEl.style.color = 'var(--chat-accent)';
+        lsTimeEl.style.fontWeight = '600';
+      } else if(lastSeen) {
+        const then = new Date(lastSeen);
+        const now = new Date();
+        const isToday = now.toDateString() === then.toDateString();
+        const timeStr = then.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+        lsTimeEl.textContent = isToday ? timeStr : _timeAgo(lastSeen);
+        lsTimeEl.style.color = '';
+        lsTimeEl.style.fontWeight = '';
+      } else {
+        lsTimeEl.textContent = '';
+      }
     }
     // Chat header update (sirf agar ye chat open hai)
     if(currentChatId === uid) {
