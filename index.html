@@ -1327,6 +1327,7 @@ window.logoutUser = async function() {
   try {
     if(myId) {
       await set(ref(db,`users/${myId}/online`), false).catch(()=>{});
+      await set(ref(db,`users/${myId}/lastSeen`), Date.now()).catch(()=>{});
     }
     // Same UID ke liye pass+setup save karo — taaki wapas login pe skip ho
     const _uid = myId;
@@ -1741,10 +1742,14 @@ function initFirebase() {
   // Set online — update karo (overwrite nahi) taaki avatar/displayId safe rahe
   const meRef=ref(db,`users/${myId}`);
   update(meRef,{ name:myName, online:true, ts:Date.now(), icon:myIcon }).catch(()=>{});
-  onDisconnect(meRef).update({ online:false });
+  onDisconnect(meRef).update({ online:false, lastSeen: Date.now() });
   // Visibility change pe bhi online/offline update karo
   document.addEventListener('visibilitychange', ()=>{
-    update(meRef, { online: !document.hidden }).catch(()=>{});
+    if(document.hidden) {
+      update(meRef, { online: false, lastSeen: Date.now() }).catch(()=>{});
+    } else {
+      update(meRef, { online: true }).catch(()=>{});
+    }
   });
 
   // Listen for messages
@@ -2094,6 +2099,7 @@ function renderChatList() {
       <div class="cp-info">
         <div class="cp-name" style="${nameStyle}">${escH(c.name||uid)}</div>
         <div class="cp-last" style="${lastStyle}">${escH(c.lastMsg||'')}</div>
+        <div id="lastseen-${uid}" style="font-size:10px;color:var(--chat-muted);margin-top:1px;"></div>
       </div>
       <div class="cp-right">
         <div class="cp-time" style="${unreadCnt?'color:var(--chat-accent);font-weight:600;':''}">${escH(c.lastTime||'')}</div>
@@ -2180,9 +2186,17 @@ window.openChat=async function(uid,name) {
   // Online status — listenUserStatus use karo (duplicate avoid + chat header update dono)
   listenUserStatus(uid);
   // Abhi ka status turant dikhao
-  get(ref(db,`users/${uid}/online`)).then(s=>{
+  get(ref(db,`users/${uid}`)).then(s=>{
+    const data = s.val() || {};
     const stEl=document.getElementById('chatStatus');
-    if(stEl && currentChatId===uid){ stEl.textContent=s.val()?'Online':'Offline'; stEl.className='chat-hst'+(s.val()?' online':''); }
+    if(stEl && currentChatId===uid){
+      if(data.online) {
+        stEl.textContent='Online'; stEl.className='chat-hst online';
+      } else {
+        stEl.textContent = data.lastSeen ? 'Last seen ' + _timeAgo(data.lastSeen) : 'Offline';
+        stEl.className='chat-hst';
+      }
+    }
   }).catch(()=>{});
 
   showScreen('chatScreen');
@@ -2218,17 +2232,29 @@ window.closeChatScreen=function(){
 
 function listenUserStatus(uid) {
   if(_onlineListeners.has(uid)) return;
-  const unsub = onValue(ref(db, `users/${uid}/online`), snap => {
-    const isOnline = snap.val() === true;
+  const unsub = onValue(ref(db, `users/${uid}`), snap => {
+    const data = snap.val() || {};
+    const isOnline = data.online === true;
+    const lastSeen = data.lastSeen || null;
     // Chat list dot update
     const dotEl = document.getElementById('online-' + uid);
     if(dotEl) dotEl.style.display = isOnline ? 'block' : 'none';
+    // Chat list last seen text update
+    const lsEl = document.getElementById('lastseen-' + uid);
+    if(lsEl) {
+      lsEl.textContent = isOnline ? '' : (lastSeen ? 'Last seen ' + _timeAgo(lastSeen) : '');
+    }
     // Chat header update (sirf agar ye chat open hai)
     if(currentChatId === uid) {
       const stEl = document.getElementById('chatStatus');
       if(stEl && !stEl.textContent.includes('Typing')) {
-        stEl.textContent = isOnline ? 'Online' : 'Offline';
-        stEl.className = 'chat-hst' + (isOnline ? ' online' : '');
+        if(isOnline) {
+          stEl.textContent = 'Online';
+          stEl.className = 'chat-hst online';
+        } else {
+          stEl.textContent = lastSeen ? 'Last seen ' + _timeAgo(lastSeen) : 'Offline';
+          stEl.className = 'chat-hst';
+        }
       }
     }
   });
