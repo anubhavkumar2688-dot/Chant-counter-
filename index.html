@@ -2395,13 +2395,23 @@ window.renderNotifications = function() {
 
 function _timeAgo(ts) {
   if(!ts) return '';
+  const now = new Date();
+  const then = new Date(ts);
   const diff = Date.now() - ts;
-  const m = Math.floor(diff/60000);
-  if(m < 1) return 'Just now';
-  if(m < 60) return m + ' min ago';
-  const h = Math.floor(m/60);
-  if(h < 24) return h + ' hr ago';
-  return Math.floor(h/24) + ' days ago';
+  const m = Math.floor(diff / 60000);
+  const timeStr = then.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+  if(m < 1) return 'just now';
+  const isToday = now.toDateString() === then.toDateString();
+  if(isToday) return 'today at ' + timeStr;
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if(yesterday.toDateString() === then.toDateString()) return 'yesterday at ' + timeStr;
+  if(diff < 7 * 24 * 60 * 60 * 1000) {
+    const day = then.toLocaleDateString('en-IN', { weekday: 'long' });
+    return day + ' at ' + timeStr;
+  }
+  const dateStr = then.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  return dateStr + ' at ' + timeStr;
 }
 
 // ===== SEND FRIEND REQUEST =====
