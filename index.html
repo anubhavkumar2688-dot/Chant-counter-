@@ -750,23 +750,6 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 </head>
 <body>
 
-<!-- ===== BLOCKED SCREEN ===== -->
-<div id="blockedScreen" style="
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  position:fixed; inset:0; z-index:99999;
-  background: linear-gradient(160deg, #fff8ed 0%, #f7f0e2 50%, #f0e6d0 100%);
-  font-family:'Poppins',sans-serif;
-  text-align:center; padding:40px 28px;
-">
-  <div style="font-size:72px; margin-bottom:28px; filter:drop-shadow(0 8px 20px rgba(200,65,10,0.2));">💬</div>
-  <div style="
-    font-size:16px; font-weight:600;
-    background: linear-gradient(135deg, #c8410a, #b8860b);
-    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-    line-height:1.8; max-width:290px; font-style:italic;
-  ">"If someone doesn't want to talk, then this app is useless for that person."</div>
-</div>
-
 <!-- ONBOARDING -->
 <div class="screen active" id="onboard">
   <div class="ob-slide" id="obSlide">
@@ -3767,8 +3750,7 @@ if('speechSynthesis' in window) {
 
 // Service Worker — FCM wala setup karta hai setupFCM() mein
 
-// App blocked — sirf owner use kar sakta hai
-// startApp();
+startApp();
 </script>
 </body>
 </html>
