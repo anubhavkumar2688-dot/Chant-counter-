@@ -625,6 +625,10 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 .gif-grid { flex:1; overflow-y:auto; display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:8px; }
 .gif-grid img { width:100%; border-radius:10px; cursor:pointer; display:block; background:var(--chat-bg); object-fit:cover; }
 .gif-grid-msg { grid-column:1/-1; text-align:center; color:var(--chat-muted); font-size:13px; padding:20px; }
+.gif-chip-row { display:flex; gap:8px; padding:8px 10px; overflow-x:auto; white-space:nowrap; border-bottom:1px solid var(--chat-border); -ms-overflow-style:none; scrollbar-width:none; }
+.gif-chip-row::-webkit-scrollbar { display:none; }
+.gif-chip { flex-shrink:0; background:var(--chat-bg); border:1px solid var(--chat-border); border-radius:16px; padding:6px 12px; font-size:13px; color:var(--chat-text); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.gif-chip.active { background:var(--chat-accent); border-color:var(--chat-accent); color:#fff; font-weight:600; }
 
 /* ===== CHAT DELETE SWIPE ===== */
 .chat-preview-wrap { position:relative; border-radius:14px; margin-bottom:4px; }
@@ -1226,6 +1230,15 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
   <div class="gif-picker-bar">
     <input type="text" id="gifSearchInp" class="gif-search-inp" placeholder="Search GIFs..." oninput="gifSearchDebounced()">
     <div class="gif-picker-close" onclick="closeGifPicker()">✕</div>
+  </div>
+  <div class="gif-chip-row" id="gifChipRow">
+    <div class="gif-chip active" data-q="" onclick="gifChipClick(this,'')">🔥 Trending</div>
+    <div class="gif-chip" data-q="romantic couple" onclick="gifChipClick(this,'romantic couple')">❤️ Romantic</div>
+    <div class="gif-chip" data-q="kiss cute" onclick="gifChipClick(this,'kiss cute')">💋 Kiss</div>
+    <div class="gif-chip" data-q="cute love" onclick="gifChipClick(this,'cute love')">🥰 Cute</div>
+    <div class="gif-chip" data-q="hug love" onclick="gifChipClick(this,'hug love')">🤗 Hug</div>
+    <div class="gif-chip" data-q="good morning" onclick="gifChipClick(this,'good morning')">☀️ Morning</div>
+    <div class="gif-chip" data-q="good night" onclick="gifChipClick(this,'good night')">🌙 Night</div>
   </div>
   <div class="gif-grid" id="gifGrid"></div>
 </div>
@@ -3881,17 +3894,26 @@ window.openGifPicker=function(){
   picker.classList.add('show');
   const inp=document.getElementById('gifSearchInp');
   inp.value='';
+  document.querySelectorAll('.gif-chip').forEach(c=>c.classList.remove('active'));
+  document.querySelector('.gif-chip[data-q=""]')?.classList.add('active');
   setTimeout(()=>inp.focus(), 150);
   loadTrendingGifs();
 };
 window.closeGifPicker=function(){
   document.getElementById('gifPicker').classList.remove('show');
 };
+window.gifChipClick=function(el, q){
+  document.querySelectorAll('.gif-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('gifSearchInp').value='';
+  if(q) searchGifs(q); else loadTrendingGifs();
+};
 window.gifSearchDebounced=function(){
   clearTimeout(_gifSearchTimer);
   const q=document.getElementById('gifSearchInp').value.trim();
   _gifSearchTimer=setTimeout(()=>{
-    if(q) searchGifs(q); else loadTrendingGifs();
+    document.querySelectorAll('.gif-chip').forEach(c=>c.classList.remove('active'));
+    if(q) searchGifs(q); else { document.querySelector('.gif-chip[data-q=""]')?.classList.add('active'); loadTrendingGifs(); }
   }, 400);
 };
 
