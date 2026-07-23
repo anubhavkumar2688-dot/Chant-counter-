@@ -1233,12 +1233,10 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
   </div>
   <div class="gif-chip-row" id="gifChipRow">
     <div class="gif-chip active" data-q="" onclick="gifChipClick(this,'')">🔥 Trending</div>
-    <div class="gif-chip" data-q="romantic couple" onclick="gifChipClick(this,'romantic couple')">❤️ Romantic</div>
-    <div class="gif-chip" data-q="kiss cute" onclick="gifChipClick(this,'kiss cute')">💋 Kiss</div>
-    <div class="gif-chip" data-q="cute love" onclick="gifChipClick(this,'cute love')">🥰 Cute</div>
-    <div class="gif-chip" data-q="hug love" onclick="gifChipClick(this,'hug love')">🤗 Hug</div>
     <div class="gif-chip" data-q="good morning" onclick="gifChipClick(this,'good morning')">☀️ Morning</div>
     <div class="gif-chip" data-q="good night" onclick="gifChipClick(this,'good night')">🌙 Night</div>
+    <div class="gif-chip" data-q="happy" onclick="gifChipClick(this,'happy')">😄 Happy</div>
+    <div class="gif-chip" data-q="cute" onclick="gifChipClick(this,'cute')">🥰 Cute</div>
   </div>
   <div class="gif-grid" id="gifGrid"></div>
 </div>
@@ -3886,7 +3884,9 @@ function downloadImg(src, name){ triggerDownload(src, name); }
 // then paste it below in place of GIPHY_API_KEY.
 // Note: Tenor's public API was fully shut down by Google on June 30, 2026 — GIPHY is the active replacement.
 const GIPHY_API_KEY = 'FynaPMowSemU3NRRQ5ofmoe8aCPpX8hh';
+const GIF_PAGE_SIZE = 50; // GIPHY's max allowed per request
 let _gifSearchTimer = null;
+let _gifState = { mode:'trending', query:'', offset:0, loading:false, done:false };
 
 window.openGifPicker=function(){
   document.getElementById('attachMenu').classList.remove('show');
@@ -3918,35 +3918,53 @@ window.gifSearchDebounced=function(){
 };
 
 async function loadTrendingGifs(){
+  _gifState = { mode:'trending', query:'', offset:0, loading:false, done:false };
   const grid=document.getElementById('gifGrid');
   grid.innerHTML='<div class="gif-grid-msg">Loading GIFs... ⏳</div>';
-  try{
-    const url=`https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=24&rating=pg-13`;
-    const res=await fetch(url);
-    const data=await res.json();
-    renderGifResults(data.data||[]);
-  }catch(e){
-    grid.innerHTML='<div class="gif-grid-msg">GIFs load nahi hue. API key check karo.</div>';
-  }
+  await fetchGifPage(true);
 }
 
 async function searchGifs(q){
+  _gifState = { mode:'search', query:q, offset:0, loading:false, done:false };
   const grid=document.getElementById('gifGrid');
   grid.innerHTML='<div class="gif-grid-msg">Searching... ⏳</div>';
+  await fetchGifPage(true);
+}
+
+async function fetchGifPage(isFirstLoad){
+  if(_gifState.loading || _gifState.done) return;
+  _gifState.loading = true;
+  const grid=document.getElementById('gifGrid');
   try{
-    const url=`https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(q)}&limit=24&rating=pg-13`;
+    let url;
+    if(_gifState.mode==='trending'){
+      url=`https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=${GIF_PAGE_SIZE}&offset=${_gifState.offset}&rating=pg-13`;
+    }else{
+      url=`https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(_gifState.query)}&limit=${GIF_PAGE_SIZE}&offset=${_gifState.offset}&rating=pg-13`;
+    }
     const res=await fetch(url);
     const data=await res.json();
-    renderGifResults(data.data||[]);
+    const results=data.data||[];
+    if(isFirstLoad) grid.innerHTML='';
+    if(!results.length && isFirstLoad){
+      grid.innerHTML='<div class="gif-grid-msg">Koi GIF nahi mila 🤷</div>';
+    }
+    renderGifResults(results, isFirstLoad);
+    _gifState.offset += results.length;
+    if(results.length < GIF_PAGE_SIZE) _gifState.done = true;
   }catch(e){
-    grid.innerHTML='<div class="gif-grid-msg">Search fail ho gaya. Try again.</div>';
+    if(isFirstLoad) grid.innerHTML='<div class="gif-grid-msg">GIFs load nahi hue. API key check karo.</div>';
+  }finally{
+    _gifState.loading = false;
   }
 }
 
-function renderGifResults(results){
+function renderGifResults(results, isFirstLoad){
   const grid=document.getElementById('gifGrid');
-  grid.innerHTML='';
-  if(!results.length){ grid.innerHTML='<div class="gif-grid-msg">Koi GIF nahi mila 🤷</div>'; return; }
+  if(!isFirstLoad){
+    const loader=grid.querySelector('.gif-loading-more');
+    if(loader) loader.remove();
+  }
   results.forEach(r=>{
     const previewUrl = r.images?.fixed_height_small?.url || r.images?.fixed_height?.url || r.images?.original?.url;
     const fullUrl = r.images?.original?.url || previewUrl;
@@ -3958,6 +3976,23 @@ function renderGifResults(results){
     grid.appendChild(img);
   });
 }
+
+// Infinite scroll: load next page when user nears the bottom of the grid
+(function(){
+  const grid=document.getElementById('gifGrid');
+  if(!grid) return;
+  grid.addEventListener('scroll', ()=>{
+    if(_gifState.loading || _gifState.done) return;
+    const nearBottom = grid.scrollTop + grid.clientHeight >= grid.scrollHeight - 300;
+    if(nearBottom){
+      const loader=document.createElement('div');
+      loader.className='gif-grid-msg gif-loading-more';
+      loader.textContent='Loading more... ⏳';
+      grid.appendChild(loader);
+      fetchGifPage(false);
+    }
+  });
+})();
 
 window.sendGif=async function(gifUrl){
   if(!gifUrl || !currentChatId) return;
