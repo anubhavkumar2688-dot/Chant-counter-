@@ -617,6 +617,14 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 .attach-opt:active { background:rgba(255,107,0,0.1); }
 .attach-opt-icon { font-size:24px; }
 .attach-opt-label { font-size:10px; color:var(--chat-muted); font-weight:500; }
+.gif-picker { position:fixed; left:0; right:0; bottom:0; height:60vh; background:var(--chat-surface); border-top:1px solid var(--chat-border); border-radius:16px 16px 0 0; z-index:300; display:none; flex-direction:column; box-shadow:0 -4px 24px rgba(0,0,0,0.4); }
+.gif-picker.show { display:flex; }
+.gif-picker-bar { display:flex; align-items:center; gap:8px; padding:10px; border-bottom:1px solid var(--chat-border); }
+.gif-search-inp { flex:1; background:var(--chat-bg); border:1px solid var(--chat-border); border-radius:20px; padding:9px 14px; color:var(--chat-text); font-size:14px; outline:none; }
+.gif-picker-close { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--chat-muted); cursor:pointer; flex-shrink:0; -webkit-tap-highlight-color:transparent; }
+.gif-grid { flex:1; overflow-y:auto; display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:8px; }
+.gif-grid img { width:100%; border-radius:10px; cursor:pointer; display:block; background:var(--chat-bg); object-fit:cover; }
+.gif-grid-msg { grid-column:1/-1; text-align:center; color:var(--chat-muted); font-size:13px; padding:20px; }
 
 /* ===== CHAT DELETE SWIPE ===== */
 .chat-preview-wrap { position:relative; border-radius:14px; margin-bottom:4px; }
@@ -1207,6 +1215,19 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
     <div class="attach-opt-icon">📷</div>
     <div class="attach-opt-label">Camera</div>
   </div>
+  <div class="attach-opt" onclick="openGifPicker()">
+    <div class="attach-opt-icon">🎞️</div>
+    <div class="attach-opt-label">GIF</div>
+  </div>
+</div>
+
+<!-- GIF Picker -->
+<div class="gif-picker" id="gifPicker">
+  <div class="gif-picker-bar">
+    <input type="text" id="gifSearchInp" class="gif-search-inp" placeholder="Search GIFs..." oninput="gifSearchDebounced()">
+    <div class="gif-picker-close" onclick="closeGifPicker()">✕</div>
+  </div>
+  <div class="gif-grid" id="gifGrid"></div>
 </div>
 
 <!-- Floating Mantra -->
@@ -2361,13 +2382,14 @@ function _renderMsg(d, key, uid, roomId, fromCache=false) {
       addImgMsg(d.data, d.from, d.time, key);
     }
   }
+  else if(d.type==='gif') addGifMsg(d.url, d.from, d.time, key);
   else if(d.type==='file') addFileMsgEl(d, d.from);
 
   // Incoming message handling
   if(d.from !== myId) {
     if(!fromCache) {
       // Chat list mein lastMsg update karo
-      updateChatListLocal(uid, d.name||uid, d.type==='chat'?d.text:'[Media]', d.time);
+      updateChatListLocal(uid, d.name||uid, d.type==='chat'?d.text:(d.type==='gif'?'[GIF]':'[Media]'), d.time);
       // Chat band hai → unread mark karo | Chat khuli hai → already read
       if(!isChatOpen) {
         markUnread(uid);
@@ -3845,6 +3867,113 @@ window.downloadViewerVid=function(){
 })();
 
 function downloadImg(src, name){ triggerDownload(src, name); }
+
+// ===== GIF PICKER (GIPHY API) =====
+// Get a free API key at https://developers.giphy.com (create account → Create an App → select "API"),
+// then paste it below in place of GIPHY_API_KEY.
+// Note: Tenor's public API was fully shut down by Google on June 30, 2026 — GIPHY is the active replacement.
+const GIPHY_API_KEY = 'FynaPMowSemU3NRRQ5ofmoe8aCPpX8hh';
+let _gifSearchTimer = null;
+
+window.openGifPicker=function(){
+  document.getElementById('attachMenu').classList.remove('show');
+  const picker=document.getElementById('gifPicker');
+  picker.classList.add('show');
+  const inp=document.getElementById('gifSearchInp');
+  inp.value='';
+  setTimeout(()=>inp.focus(), 150);
+  loadTrendingGifs();
+};
+window.closeGifPicker=function(){
+  document.getElementById('gifPicker').classList.remove('show');
+};
+window.gifSearchDebounced=function(){
+  clearTimeout(_gifSearchTimer);
+  const q=document.getElementById('gifSearchInp').value.trim();
+  _gifSearchTimer=setTimeout(()=>{
+    if(q) searchGifs(q); else loadTrendingGifs();
+  }, 400);
+};
+
+async function loadTrendingGifs(){
+  const grid=document.getElementById('gifGrid');
+  grid.innerHTML='<div class="gif-grid-msg">Loading GIFs... ⏳</div>';
+  try{
+    const url=`https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=24&rating=pg-13`;
+    const res=await fetch(url);
+    const data=await res.json();
+    renderGifResults(data.data||[]);
+  }catch(e){
+    grid.innerHTML='<div class="gif-grid-msg">GIFs load nahi hue. API key check karo.</div>';
+  }
+}
+
+async function searchGifs(q){
+  const grid=document.getElementById('gifGrid');
+  grid.innerHTML='<div class="gif-grid-msg">Searching... ⏳</div>';
+  try{
+    const url=`https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(q)}&limit=24&rating=pg-13`;
+    const res=await fetch(url);
+    const data=await res.json();
+    renderGifResults(data.data||[]);
+  }catch(e){
+    grid.innerHTML='<div class="gif-grid-msg">Search fail ho gaya. Try again.</div>';
+  }
+}
+
+function renderGifResults(results){
+  const grid=document.getElementById('gifGrid');
+  grid.innerHTML='';
+  if(!results.length){ grid.innerHTML='<div class="gif-grid-msg">Koi GIF nahi mila 🤷</div>'; return; }
+  results.forEach(r=>{
+    const previewUrl = r.images?.fixed_height_small?.url || r.images?.fixed_height?.url || r.images?.original?.url;
+    const fullUrl = r.images?.original?.url || previewUrl;
+    if(!previewUrl) return;
+    const img=document.createElement('img');
+    img.src=previewUrl;
+    img.loading='lazy';
+    img.onclick=()=>sendGif(fullUrl);
+    grid.appendChild(img);
+  });
+}
+
+window.sendGif=async function(gifUrl){
+  if(!gifUrl || !currentChatId) return;
+  closeGifPicker();
+  if(isBlocked(currentChatId)){ toast('You have blocked this user 🚫'); return; }
+  const t=getTime();
+  const d={type:'gif', url:gifUrl, from:myId, name:myName, time:t};
+  await sendChatMessage(currentChatId, d);
+  toast('GIF bhej di ✓');
+};
+
+function addGifMsg(url, fromUid, time, msgKey){
+  const area=document.getElementById('msgsArea');
+  const isMe = fromUid === myId;
+  const w=document.createElement('div');
+  w.className='msg-wrap '+(isMe?'me':'them');
+  if(msgKey) w.dataset.msgid=msgKey;
+
+  const imgEl=document.createElement('img');
+  imgEl.style.cssText='max-width:220px;max-height:240px;border-radius:14px;object-fit:cover;cursor:pointer;display:block;';
+  imgEl.src=url;
+  imgEl.onclick=()=>openImgViewer(url,'gif_'+Date.now()+'.gif');
+
+  const dlBtn=document.createElement('button');
+  dlBtn.className='dl-btn';
+  dlBtn.innerHTML='⬇ Save';
+  dlBtn.onclick=(e)=>{ e.stopPropagation(); downloadImg(url,'gif_'+Date.now()+'.gif'); };
+
+  const meta=document.createElement('div');
+  meta.className='msg-meta';
+  meta.innerHTML=`<span class="msg-time">${time||''}</span>${isMe?`<span class="msg-tick sent"><span style="color:#666;font-size:12px;">✓</span></span>`:''}`;
+
+  w.appendChild(imgEl);
+  w.appendChild(dlBtn);
+  w.appendChild(meta);
+  area.appendChild(w);
+  area.scrollTop=area.scrollHeight;
+}
 
 window.toggleAttachMenu=function(){
   const menu=document.getElementById('attachMenu');
