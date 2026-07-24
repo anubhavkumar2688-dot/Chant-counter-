@@ -2118,7 +2118,8 @@ async function startCall(uid, type) {
     await set(ref(db,`calls/${roomId}/offer`), { sdp: offer.sdp, type: offer.type, from: myId, callType: type, ts: Date.now() });
     await set(ref(db,`calls/${roomId}/status`), 'ringing');
   } catch(e) {
-    toast('Call start nahi ho payi');
+    console.error('startCall error:', e);
+    toast('Call start nahi ho payi: ' + (e && e.message ? e.message : e), 6000);
     endCall(true);
     return;
   }
@@ -2193,7 +2194,8 @@ window.acceptCall = async function() {
     await set(ref(db,`calls/${roomId}/answer`), { sdp: answer.sdp, type: answer.type, from: myId, ts: Date.now() });
     await set(ref(db,`calls/${roomId}/status`), 'accepted');
   } catch(e) {
-    toast('Call connect nahi ho payi');
+    console.error('acceptCall error:', e);
+    toast('Call connect nahi ho payi: ' + (e && e.message ? e.message : e), 6000);
     endCall(true);
     return;
   }
@@ -3835,10 +3837,10 @@ window.lockAndGoCounter=function(){
 };
 
 // ===== TOAST =====
-window.toast=function(msg){
+window.toast=function(msg, duration){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2500);
+  setTimeout(()=>t.classList.remove('show'), duration||2500);
 };
 
 // ===== UTILS =====
