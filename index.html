@@ -1453,9 +1453,30 @@ let following = {};
 let currentChatId = null, currentChatName = '';
 
 // ===== CALL STATE =====
+// STUN alone often fails on mobile data (symmetric NAT) — TURN relay is required
+// as a fallback so audio/video can actually connect instead of the call cutting.
+// Free TURN servers below are Open Relay Project (openrelay.metered.ca) — fine for
+// testing/small apps. For a production app, sign up for a free TURN plan at
+// https://www.metered.ca/tools/openrelay/ or https://xirsys.com to get your own
+// credentials (more reliable, less shared load).
 const ICE_SERVERS = { iceServers: [
   { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' }
+  { urls: 'stun:stun1.l.google.com:19302' },
+  {
+    urls: 'turn:openrelay.metered.ca:80',
+    username: 'openrelayproject',
+    credential: 'openrelayproject'
+  },
+  {
+    urls: 'turn:openrelay.metered.ca:443',
+    username: 'openrelayproject',
+    credential: 'openrelayproject'
+  },
+  {
+    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+    username: 'openrelayproject',
+    credential: 'openrelayproject'
+  }
 ]};
 let pc = null;
 let localStream = null;
@@ -1935,9 +1956,17 @@ function createPeerConnection(roomId, role) {
   };
   conn.onconnectionstatechange = () => {
     if(conn !== pc) return;
-    if(conn.connectionState==='failed' || conn.connectionState==='disconnected') {
+    if(conn.connectionState==='failed') {
       toast('Call connection lost');
       endCall();
+    } else if(conn.connectionState==='disconnected') {
+      // Mobile networks often drop briefly and recover — wait before ending the call
+      setTimeout(()=>{
+        if(conn===pc && conn.connectionState==='disconnected') {
+          toast('Call connection lost');
+          endCall();
+        }
+      }, 6000);
     }
   };
   return conn;
