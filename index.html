@@ -1933,6 +1933,19 @@ function chatRoomId(u1,u2){ return [u1,u2].sort().join('__'); }
 
 // ===== CALLING (WebRTC + Firebase signaling) =====
 
+// Free TURN plans throttle bandwidth — cap video bitrate so video calls
+// don't saturate the relay and end up losing audio+video entirely.
+async function capVideoBitrate(conn) {
+  const sender = conn.getSenders().find(s => s.track && s.track.kind === 'video');
+  if(!sender) return;
+  try {
+    const params = sender.getParameters();
+    if(!params.encodings || !params.encodings.length) params.encodings = [{}];
+    params.encodings[0].maxBitrate = 300000; // ~300kbps
+    await sender.setParameters(params);
+  } catch(e) { console.warn('capVideoBitrate failed', e); }
+}
+
 function createPeerConnection(roomId, role) {
   const conn = new RTCPeerConnection(ICE_SERVERS);
   conn.onicecandidate = e => {
@@ -2091,7 +2104,7 @@ async function startCall(uid, type) {
   currentCallRoomId = roomId;
 
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({ audio:true, video: type==='video' ? {facingMode:'user'} : false });
+    localStream = await navigator.mediaDevices.getUserMedia({ audio:true, video: type==='video' ? {facingMode:'user', width:{ideal:480,max:640}, height:{ideal:360,max:480}, frameRate:{ideal:15,max:20}} : false });
   } catch(e) {
     toast('Mic/Camera access allow karo call ke liye 🎙️');
     currentCallPeer=null; currentCallRoomId=null; callRole=null;
@@ -2103,7 +2116,7 @@ async function startCall(uid, type) {
 
   pc = createPeerConnection(roomId, 'caller');
   localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-  if(type==='video') { const lv=document.getElementById('localVideo'); lv.srcObject=localStream; lv.style.display='block'; }
+  if(type==='video') { const lv=document.getElementById('localVideo'); lv.srcObject=localStream; lv.style.display='block'; capVideoBitrate(pc); }
 
   try {
     const offer = await pc.createOffer();
@@ -2165,7 +2178,7 @@ window.acceptCall = async function() {
   const stEl=document.getElementById('callStatus'); if(stEl) stEl.textContent='Connecting...';
 
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({ audio:true, video: callType==='video' ? {facingMode:'user'} : false });
+    localStream = await navigator.mediaDevices.getUserMedia({ audio:true, video: callType==='video' ? {facingMode:'user', width:{ideal:480,max:640}, height:{ideal:360,max:480}, frameRate:{ideal:15,max:20}} : false });
   } catch(e) {
     toast('Mic/Camera access allow karo 🎙️');
     declineCall();
@@ -2174,7 +2187,7 @@ window.acceptCall = async function() {
 
   pc = createPeerConnection(roomId, 'callee');
   localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-  if(callType==='video') { const lv=document.getElementById('localVideo'); lv.srcObject=localStream; lv.style.display='block'; }
+  if(callType==='video') { const lv=document.getElementById('localVideo'); lv.srcObject=localStream; lv.style.display='block'; capVideoBitrate(pc); }
 
   try {
     const offerSnap = await get(ref(db,`calls/${roomId}/offer`));
