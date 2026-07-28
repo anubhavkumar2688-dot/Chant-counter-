@@ -1444,7 +1444,7 @@ window.logoutUser = async function() {
 };
 
 // ===== STATE =====
-let myId = null, myName = '', myIcon = 'om', myAvatar = null;
+let myId = null, myDisplayId = null, myName = '', myIcon = 'om', myAvatar = null;
 let userPassword = null;
 let count = 0, malaTarget = 108, totalMantras = 0, soundOn = true;
 let selectedMantra = null;
@@ -3151,18 +3151,21 @@ window.searchUser=function(val) {
   const res=document.getElementById('searchResults');
   if(!val||val.length<1) { res.innerHTML=''; _lastSearchUid=null; return; }
   if(val.length<6) { res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">Enter a 6-letter ID...</div>'; _lastSearchUid=null; return; }
-  if(val===myId) { res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">That\'s your own ID! 😄</div>'; return; }
+  if(val===myDisplayId) { res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">That\'s your own ID! 😄</div>'; return; }
 
   clearTimeout(_searchUserTimer);
   res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">🔍 Searching...</div>';
   _searchUserTimer = setTimeout(async ()=>{
     try {
       const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000));
-      const snap = await Promise.race([get(ref(db,`users/${val}`)), timeoutPromise]);
+      const idSnap = await Promise.race([get(ref(db,`shortIds/${val}`)), timeoutPromise]);
+      const realUid = idSnap.exists() ? idSnap.val() : null;
+      if(!realUid) { res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">❌ User not found — check the ID</div>'; _lastSearchUid=null; return; }
+      const snap = await Promise.race([get(ref(db,`users/${realUid}`)), timeoutPromise]);
       if(snap.exists()) {
         const u=snap.val();
-        _lastSearchUid = val; _lastSearchName = u.name||val;
-        searchUser_render(val, u.name||val, u.online);
+        _lastSearchUid = realUid; _lastSearchName = u.name||val;
+        searchUser_render(realUid, u.name||val, u.online);
       } else {
         res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:8px;">❌ User not found — check the ID</div>';
         _lastSearchUid=null;
@@ -3694,7 +3697,7 @@ function updateSettingsUI() {
   const shortId = myId || '-';
   document.getElementById('settingsName').textContent=myName||'-';
   document.getElementById('settingsId').textContent='ID: '+shortId;
-  document.getElementById('myIdDisplay').textContent=shortId;
+  document.getElementById('myIdDisplay').textContent=myDisplayId;
   document.getElementById('malaTargetDisplay').textContent=malaTarget+' per mala';
 
   // Notification toggle removed
@@ -3719,7 +3722,7 @@ window.searchUserFromSettings=function(val){
   const res=document.getElementById('settingsSearchResults');
   if(!val||val.length<1){ res.innerHTML=''; return; }
   if(val.length<6){ res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">Enter a 6-letter ID (e.g. AB12XY)...</div>'; return; }
-  if(val===myId){ res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">That is your own ID! 😄</div>'; return; }
+  if(val===myDisplayId){ res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">That is your own ID! 😄</div>'; return; }
 
   // Debounce — 400ms baad search karo
   clearTimeout(_settingsSearchTimer);
@@ -3728,24 +3731,27 @@ window.searchUserFromSettings=function(val){
     try {
       // Timeout wrapper — 8 seconds
       const timeoutPromise = new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000));
-      const snap = await Promise.race([get(ref(db,`users/${val}`)), timeoutPromise]);
+      const idSnap = await Promise.race([get(ref(db,`shortIds/${val}`)), timeoutPromise]);
+      const realUid = idSnap.exists() ? idSnap.val() : null;
+      if(!realUid) { res.innerHTML=`<div style="color:var(--chat-muted);font-size:12px;padding:4px;">❌ User not found — check the ID</div>`; return; }
+      const snap = await Promise.race([get(ref(db,`users/${realUid}`)), timeoutPromise]);
       if(snap.exists()){
         const u=snap.val();
         const name = u.name||val;
-        const reqSnap = await get(ref(db, `followRequests/${val}/${myId}`));
+        const reqSnap = await get(ref(db, `followRequests/${realUid}/${myId}`));
         const reqData = reqSnap.val();
-        const iBlockedThem = isBlocked(val);
-        const isAccepted = following[val] || (reqData && reqData.status==='accepted');
+        const iBlockedThem = isBlocked(realUid);
+        const isAccepted = following[realUid] || (reqData && reqData.status==='accepted');
         const isPending = !isAccepted && reqData && reqData.status==='pending';
         let actionBtn = '';
         if(iBlockedThem) {
-          actionBtn = `<button onclick="unblockUser('${val}','${escH(name)}')" style="background:none;border:1px solid rgba(244,67,54,0.4);color:#f44336;border-radius:20px;padding:7px 14px;font-size:11px;cursor:pointer;font-family:'Poppins',sans-serif;">Unblock</button>`;
+          actionBtn = `<button onclick="unblockUser('${realUid}','${escH(name)}')" style="background:none;border:1px solid rgba(244,67,54,0.4);color:#f44336;border-radius:20px;padding:7px 14px;font-size:11px;cursor:pointer;font-family:'Poppins',sans-serif;">Unblock</button>`;
         } else if(isAccepted) {
-          actionBtn = `<button onclick="openChat('${val}','${escH(name)}');document.getElementById('settingsSearchBar').value='';document.getElementById('settingsSearchResults').innerHTML='';" style="background:var(--chat-accent);color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;">💬 Chat</button>`;
+          actionBtn = `<button onclick="openChat('${realUid}','${escH(name)}');document.getElementById('settingsSearchBar').value='';document.getElementById('settingsSearchResults').innerHTML='';" style="background:var(--chat-accent);color:#fff;border:none;border-radius:20px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif;">💬 Chat</button>`;
         } else if(isPending) {
           actionBtn = `<button class="follow-req-btn pending" style="cursor:default;padding:7px 14px;font-size:12px;">⏳ Pending</button>`;
         } else {
-          actionBtn = `<button onclick="sendFollowRequest('${val}','${escH(name)}')" class="follow-req-btn" style="padding:7px 14px;font-size:12px;">+ Follow</button>`;
+          actionBtn = `<button onclick="sendFollowRequest('${realUid}','${escH(name)}')" class="follow-req-btn" style="padding:7px 14px;font-size:12px;">+ Follow</button>`;
         }
         res.innerHTML=`
           <div class="user-row" style="margin-top:0">
@@ -4299,9 +4305,16 @@ function handleAuthUser(user) {
 
   if(!user) { showScreen('googleLogin'); return; }
 
-  const shortId = user.uid.substr(0,6).toUpperCase();
+  const shortId = user.uid; // pura UID — rules ke liye zaroori hai auth.uid se match karna
   myId = shortId;
   localStorage.setItem('dc_my_id', shortId);
+
+  // Chhota 6-letter "displayId" — sirf dosto ko share/search karne ke liye.
+  // Ye hamesha same UID se banega, isliye har login pe same code milega.
+  myDisplayId = user.uid.substr(0,6).toUpperCase();
+  localStorage.setItem('dc_display_id', myDisplayId);
+  // Mapping save karo taaki search us chhote code se pura UID dhoondh sake
+  set(ref(db, `shortIds/${myDisplayId}`), myId).catch(()=>{});
 
   // Name Google se lo agar missing hai
   if(!myName && user.displayName) {
