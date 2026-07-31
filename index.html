@@ -415,6 +415,8 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 
 /* Reply preview */
 .reply-preview { background:rgba(255,107,0,0.1); border-left:3px solid var(--chat-accent); border-radius:0 10px 10px 0; padding:6px 10px; margin-bottom:4px; font-size:11px; color:var(--chat-muted); }
+.reply-preview-media { display:flex; align-items:center; gap:8px; }
+.reply-thumb { width:36px; height:36px; border-radius:6px; object-fit:cover; flex-shrink:0; }
 
 /* Chat input */
 .chat-input-bar { background:var(--chat-surface); border-top:1px solid var(--chat-border); padding:10px 12px max(20px,env(safe-area-inset-bottom)); display:flex; align-items:flex-end; gap:8px; flex-shrink:0; }
@@ -958,7 +960,8 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
     <div class="sys-msg">🔒 Private • Encrypted • No Storage</div>
   </div>
   <div style="position:relative;">
-    <div id="replyBar" style="display:none;width:100%;padding:8px 12px;background:rgba(255,107,0,0.1);border-left:3px solid var(--chat-accent);" class="reply-bar">
+    <div id="replyBar" style="display:none;width:100%;padding:8px 12px;background:rgba(255,107,0,0.1);border-left:3px solid var(--chat-accent);align-items:center;gap:8px;" class="reply-bar">
+      <img id="replyBarThumb" style="display:none;width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0;">
       <div id="replyBarText" style="font-size:12px;color:var(--chat-muted);flex:1;"></div>
       <div class="reply-close" onclick="cancelReply()">✕</div>
     </div>
@@ -3446,7 +3449,7 @@ window.sendMsg=async function(){
     const chatId = currentChatId;
     const chatName = currentChatName;
     const msgData={type:'chat',text,from:myId,name:myName,time:t};
-    if(capturedReply) msgData.replyTo={text:capturedReply.text,msgId:capturedReply.msgId};
+    if(capturedReply) msgData.replyTo={text:capturedReply.text,msgId:capturedReply.msgId,...(capturedReply.mediaUrl?{mediaUrl:capturedReply.mediaUrl,mediaType:capturedReply.mediaType}:{})};
 
     pushMsgOptimistic(chatId, msgData, (key)=>{
       addMsg(text, myId, myName, t, key, msgData.replyTo||null);
@@ -3467,10 +3470,7 @@ function addMsg(text,from,name,time,msgId,replyData) {
   w.className='msg-wrap '+(me?'me':'them');
   w.dataset.msgid=msgId||'';
 
-  let replyHtml='';
-  if(replyData&&replyData.text){
-    replyHtml=`<div class="reply-preview">↩ ${escH(replyData.text.substring(0,60))}</div>`;
-  }
+  let replyHtml=buildReplyHtml(replyData);
 
   w.innerHTML=`
     ${replyHtml}
@@ -3540,10 +3540,7 @@ function addImgMsg(dataUrl, fromUid, time, msgKey, replyData) {
   w.className='msg-wrap '+(isMe?'me':'them');
   if(msgKey) w.dataset.msgid=msgKey;
 
-  let replyHtml='';
-  if(replyData&&replyData.text){
-    replyHtml=`<div class="reply-preview">↩ ${escH(replyData.text.substring(0,60))}</div>`;
-  }
+  let replyHtml=buildReplyHtml(replyData);
 
   const imgEl=document.createElement('img');
   imgEl.style.cssText='max-width:220px;max-height:240px;border-radius:14px;object-fit:cover;cursor:pointer;display:block;';
@@ -3570,7 +3567,12 @@ function addImgMsg(dataUrl, fromUid, time, msgKey, replyData) {
   w.addEventListener('touchstart',e=>startX=e.touches[0].clientX,{passive:true});
   w.addEventListener('touchend',e=>{
     const dx=e.changedTouches[0].clientX-startX;
-    if((dx>60&&!isMe)||(dx<-60&&isMe)){ replyTo={text:'📷 Photo',msgId:msgKey}; showReplyBar('📷 Photo'); }
+    if((dx>60&&!isMe)||(dx<-60&&isMe)){
+      makeThumb(dataUrl, thumb => {
+        replyTo={text:'📷 Photo',msgId:msgKey,mediaUrl:thumb,mediaType:'image'};
+        showReplyBar('📷 Photo', thumb);
+      });
+    }
   });
 
   area.appendChild(w);
@@ -3715,9 +3717,12 @@ document.getElementById('msgInp').addEventListener('input',()=>{
 });
 
 // Reply
-window.showReplyBar=function(text){
+window.showReplyBar=function(text, mediaUrl){
   const bar=document.getElementById('replyBar');
+  const thumb=document.getElementById('replyBarThumb');
   document.getElementById('replyBarText').textContent='↩ '+text.substring(0,50);
+  if(mediaUrl){ thumb.src=mediaUrl; thumb.style.display='block'; }
+  else { thumb.style.display='none'; thumb.src=''; }
   bar.style.display='flex';
 };
 
@@ -3759,7 +3764,7 @@ async function compressAndSend(dataUrl, file, t, replyData){
   const chatId = currentChatId; // capture at call time
   const finishSend = (finalDataUrl)=>{
     const d={type:'image',data:finalDataUrl,from:myId,name:myName,time:t};
-    if(replyData) d.replyTo={text:replyData.text,msgId:replyData.msgId};
+    if(replyData) d.replyTo={text:replyData.text,msgId:replyData.msgId,...(replyData.mediaUrl?{mediaUrl:replyData.mediaUrl,mediaType:replyData.mediaType}:{})};
     pushMsgOptimistic(chatId, d, (key)=>{
       addImgMsg(finalDataUrl, myId, t, key, d.replyTo||null);
     });
@@ -3955,6 +3960,34 @@ window.toast=function(msg, duration){
 
 // ===== UTILS =====
 function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function makeThumb(dataUrl, cb){
+  try{
+    const img=new Image();
+    img.onload=function(){
+      const size=64;
+      const canvas=document.createElement('canvas');
+      canvas.width=size; canvas.height=size;
+      const ctx=canvas.getContext('2d');
+      // center-crop square
+      const s=Math.min(img.width, img.height);
+      const sx=(img.width-s)/2, sy=(img.height-s)/2;
+      ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
+      cb(canvas.toDataURL('image/jpeg', 0.6));
+    };
+    img.onerror=()=>cb(dataUrl);
+    img.src=dataUrl;
+  }catch(e){ cb(dataUrl); }
+}
+
+function buildReplyHtml(replyData){
+  if(!replyData || !replyData.text) return '';
+  const label = escH(replyData.text.substring(0,60));
+  if(replyData.mediaUrl){
+    return `<div class="reply-preview reply-preview-media"><img src="${replyData.mediaUrl}" class="reply-thumb"><span>↩ ${label}</span></div>`;
+  }
+  return `<div class="reply-preview">↩ ${label}</div>`;
+}
 function fmtSz(b){ if(b<1024) return b+' B'; if(b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(1)+' MB'; }
 
 // ===== IMAGE VIEWER =====
@@ -4137,17 +4170,17 @@ function renderGifResults(results, isFirstLoad){
 
 window.sendGif=async function(gifUrl){
   if(!gifUrl || !currentChatId) return;
-  closeGifPicker();
   if(isBlocked(currentChatId)){ toast('You have blocked this user 🚫'); return; }
   const t=getTime();
   const chatId = currentChatId;
   const capturedReply = replyTo;
   if(replyTo) cancelReply();
   const d={type:'gif', url:gifUrl, from:myId, name:myName, time:t};
-  if(capturedReply) d.replyTo={text:capturedReply.text,msgId:capturedReply.msgId};
+  if(capturedReply) d.replyTo={text:capturedReply.text,msgId:capturedReply.msgId,...(capturedReply.mediaUrl?{mediaUrl:capturedReply.mediaUrl,mediaType:capturedReply.mediaType}:{})};
   pushMsgOptimistic(chatId, d, (key)=>{
     addGifMsg(gifUrl, myId, t, key, d.replyTo||null);
   });
+  toast('GIF sent ✓');
 };
 
 function addGifMsg(url, fromUid, time, msgKey, replyData){
@@ -4157,10 +4190,7 @@ function addGifMsg(url, fromUid, time, msgKey, replyData){
   w.className='msg-wrap '+(isMe?'me':'them');
   if(msgKey) w.dataset.msgid=msgKey;
 
-  let replyHtml='';
-  if(replyData&&replyData.text){
-    replyHtml=`<div class="reply-preview">↩ ${escH(replyData.text.substring(0,60))}</div>`;
-  }
+  let replyHtml=buildReplyHtml(replyData);
 
   const imgEl=document.createElement('img');
   imgEl.style.cssText='max-width:220px;max-height:240px;border-radius:14px;object-fit:cover;cursor:pointer;display:block;';
@@ -4187,7 +4217,7 @@ function addGifMsg(url, fromUid, time, msgKey, replyData){
   w.addEventListener('touchstart',e=>startX=e.touches[0].clientX,{passive:true});
   w.addEventListener('touchend',e=>{
     const dx=e.changedTouches[0].clientX-startX;
-    if((dx>60&&!isMe)||(dx<-60&&isMe)){ replyTo={text:'🎞️ GIF',msgId:msgKey}; showReplyBar('🎞️ GIF'); }
+    if((dx>60&&!isMe)||(dx<-60&&isMe)){ replyTo={text:'🎞️ GIF',msgId:msgKey,mediaUrl:url,mediaType:'gif'}; showReplyBar('🎞️ GIF', url); }
   });
 
   area.appendChild(w);
@@ -4286,6 +4316,8 @@ window.cancelReply=function(){
   window._editingMsgId=null;
   document.getElementById('replyBar').style.display='none';
   document.getElementById('replyBar').style.borderLeftColor='var(--chat-accent)';
+  const thumb=document.getElementById('replyBarThumb');
+  if(thumb){ thumb.style.display='none'; thumb.src=''; }
   const btn=document.getElementById('sendBtn');
   if(btn){ btn.textContent='➤'; btn.style.background=''; }
 };
