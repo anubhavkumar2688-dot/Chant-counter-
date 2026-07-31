@@ -1245,7 +1245,7 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 <div class="mantra-float" id="mantraFloat">ॐ</div>
 
 <!-- Hidden inputs -->
-<input type="file" id="fileInput" onchange="sendFile(this)" accept="image/*">
+<input type="file" id="fileInput" onchange="sendFile(this)" accept="image/*" multiple>
 <input type="file" id="cameraInput" onchange="sendFile(this)" accept="image/*" capture="environment">
 <input type="file" id="avatarInput" accept="image/*" onchange="setAvatar(this)">
 <div class="toast" id="toast"></div>
@@ -2328,6 +2328,43 @@ async function sendChatMessage(toUid, msgData) {
   return key;
 }
 
+// ===== OPTIMISTIC SEND — turant bubble dikhao, background mein bhejo =====
+// Isse "Sending..." → "✓ Sent" → "✓✓ Seen" flow milta hai, aur slow net pe
+// baar-baar Send dabane se duplicate messages nahi jaate.
+window._pendingSends = {};
+
+function pushMsgOptimistic(toUid, msgData, renderFn) {
+  const roomId = chatRoomId(myId, toUid);
+  const msgRef = push(ref(db,`chats/${roomId}/messages`));
+  const key = msgRef.key;
+  if(!_globalShownKeys.has(roomId)) _globalShownKeys.set(roomId, new Set());
+  _globalShownKeys.get(roomId).add(key); // taaki listener isse dobara render na kare
+  renderFn(key);
+  updateMsgTick(key,'sending');
+  const fullData = { ...msgData, key, sentAt: Date.now(), tick:'sent' };
+  window._pendingSends[key] = { msgRef, fullData, toUid };
+  return _trySendOptimistic(key);
+}
+
+async function _trySendOptimistic(key) {
+  const pending = window._pendingSends[key];
+  if(!pending) return;
+  try {
+    await set(pending.msgRef, pending.fullData);
+    updateMsgTick(key,'sent');
+    sendToUser(pending.toUid, { type:'newmsg', from:myId, name:myName, text: pending.fullData.text||'[Media]' }).catch(()=>{});
+    delete window._pendingSends[key];
+  } catch(err) {
+    updateMsgTick(key,'failed');
+  }
+}
+
+window.retrySend = function(key) {
+  if(!window._pendingSends[key]) return;
+  updateMsgTick(key,'sending');
+  _trySendOptimistic(key);
+};
+
 // FCM background push — receiver ka token Firebase se lo, phir push karo
 
 // Real-time listener for chat room — paginated (50 first, rest background)
@@ -2427,10 +2464,10 @@ function _renderMsg(d, key, uid, roomId, fromCache=false) {
     if(d.data==='__cached__') {
       addImgPlaceholder(key, d.from, d.time);
     } else {
-      addImgMsg(d.data, d.from, d.time, key);
+      addImgMsg(d.data, d.from, d.time, key, d.replyTo||null);
     }
   }
-  else if(d.type==='gif') addGifMsg(d.url, d.from, d.time, key);
+  else if(d.type==='gif') addGifMsg(d.url, d.from, d.time, key, d.replyTo||null);
   else if(d.type==='file') addFileMsgEl(d, d.from);
 
   // Incoming message handling
@@ -2604,7 +2641,12 @@ window.openChat=async function(uid,name) {
   if(isBlocked(uid)){
     toast('You have blocked this user 🚫'); return;
   }
-  const theyBlockedMe = await get(ref(db,`blocked/${uid}/${myId}`)).then(s=>s.val()).catch(()=>false);
+  // Timeout ke saath check karo — slow/flaky net pe bhi chat screen atakni nahi chahiye
+  const _blockTimeout = new Promise(res=>setTimeout(()=>res(false), 3000));
+  const theyBlockedMe = await Promise.race([
+    get(ref(db,`blocked/${uid}/${myId}`)).then(s=>s.val()).catch(()=>false),
+    _blockTimeout
+  ]);
   if(theyBlockedMe){
     toast('This user has blocked you 🚫'); return;
   }
@@ -3373,26 +3415,49 @@ window.sendMsg=async function(){
     return;
   }
 
-  if(isBlocked(currentChatId)){
-    toast('You have blocked this user 🚫'); return;
-  }
-  const theyBlockedMe = await get(ref(db,`blocked/${currentChatId}/${myId}`)).then(s=>s.val()).catch(()=>false);
-  if(theyBlockedMe){
-    toast('This user has blocked you 🚫'); return;
-  }
-  const t=getTime();
+  // Rapid multi-click / slow-net double-send guard — ek time pe sirf ek send chalega
+  if(window._sendLock) return;
+  window._sendLock = true;
+  const btn=document.getElementById('sendBtn');
+  if(btn) btn.disabled = true;
+
+  // Turant clear + UI reset — network response ka wait NAHI karna (ye hi purana bug tha)
   inp.value='';
   inp.style.height='auto';
   inp.focus();
-  const btn=document.getElementById('sendBtn');
   if(btn){ btn.textContent='➤'; btn.style.background=''; }
   const capturedReply=replyTo;
   if(replyTo) cancelReply();
-  const msgData={type:'chat',text,from:myId,name:myName,time:t};
-  if(capturedReply) msgData.replyTo={text:capturedReply.text,msgId:capturedReply.msgId};
-  await sendChatMessage(currentChatId, msgData);
-  updateChatListLocal(currentChatId, currentChatName, text, t);
-  renderChatList();
+
+  try {
+    if(isBlocked(currentChatId)){
+      toast('You have blocked this user 🚫'); return;
+    }
+    const _blockTimeout = new Promise(res=>setTimeout(()=>res(false), 3000));
+    const theyBlockedMe = await Promise.race([
+      get(ref(db,`blocked/${currentChatId}/${myId}`)).then(s=>s.val()).catch(()=>false),
+      _blockTimeout
+    ]);
+    if(theyBlockedMe){
+      toast('This user has blocked you 🚫'); return;
+    }
+
+    const t=getTime();
+    const chatId = currentChatId;
+    const chatName = currentChatName;
+    const msgData={type:'chat',text,from:myId,name:myName,time:t};
+    if(capturedReply) msgData.replyTo={text:capturedReply.text,msgId:capturedReply.msgId};
+
+    pushMsgOptimistic(chatId, msgData, (key)=>{
+      addMsg(text, myId, myName, t, key, msgData.replyTo||null);
+    });
+
+    updateChatListLocal(chatId, chatName, text, t);
+    renderChatList();
+  } finally {
+    window._sendLock = false;
+    if(btn) btn.disabled = false;
+  }
 };
 
 function addMsg(text,from,name,time,msgId,replyData) {
@@ -3463,7 +3528,7 @@ function addMsg(text,from,name,time,msgId,replyData) {
   area.scrollTop=area.scrollHeight;
 }
 
-function addImgMsg(dataUrl, fromUid, time, msgKey) {
+function addImgMsg(dataUrl, fromUid, time, msgKey, replyData) {
   const area=document.getElementById('msgsArea');
   const isMe = fromUid === myId;
   // Agar placeholder already hai to replace karo
@@ -3473,6 +3538,12 @@ function addImgMsg(dataUrl, fromUid, time, msgKey) {
   }
   const w=document.createElement('div');
   w.className='msg-wrap '+(isMe?'me':'them');
+  if(msgKey) w.dataset.msgid=msgKey;
+
+  let replyHtml='';
+  if(replyData&&replyData.text){
+    replyHtml=`<div class="reply-preview">↩ ${escH(replyData.text.substring(0,60))}</div>`;
+  }
 
   const imgEl=document.createElement('img');
   imgEl.style.cssText='max-width:220px;max-height:240px;border-radius:14px;object-fit:cover;cursor:pointer;display:block;';
@@ -3486,12 +3557,22 @@ function addImgMsg(dataUrl, fromUid, time, msgKey) {
 
   const meta=document.createElement('div');
   meta.className='msg-meta';
-  const tickId='tick-img-'+Date.now();
+  const tickId='tick-'+(msgKey||('img-'+Date.now()));
   meta.innerHTML=`<span class="msg-time">${time||''}</span>${isMe?`<span class="msg-tick sent" id="${tickId}"><span style="color:#666;font-size:12px;">✓</span></span>`:''}`;
 
+  if(replyHtml) w.insertAdjacentHTML('beforeend', replyHtml);
   w.appendChild(imgEl);
   w.appendChild(dlBtn);
   w.appendChild(meta);
+
+  // Swipe to reply — matlab jaisa text messages mein hota hai
+  let startX=0;
+  w.addEventListener('touchstart',e=>startX=e.touches[0].clientX,{passive:true});
+  w.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-startX;
+    if((dx>60&&!isMe)||(dx<-60&&isMe)){ replyTo={text:'📷 Photo',msgId:msgKey}; showReplyBar('📷 Photo'); }
+  });
+
   area.appendChild(w);
   area.scrollTop=area.scrollHeight;
 }
@@ -3597,12 +3678,24 @@ function updateMsgTick(msgId,state) {
   if(state==='seen'){
     el.className='msg-tick seen';
     el.innerHTML='<span style="color:#4fc3f7;font-size:12px;letter-spacing:-2px;">✓✓</span>';
+    el.onclick=null; el.style.cursor='';
   } else if(state==='delivered'){
     el.className='msg-tick delivered';
     el.innerHTML='<span style="color:#999;font-size:12px;letter-spacing:-2px;">✓✓</span>';
+    el.onclick=null; el.style.cursor='';
+  } else if(state==='sending'){
+    el.className='msg-tick sending';
+    el.innerHTML='<span style="color:#999;font-size:11px;">🕐</span>';
+    el.onclick=null; el.style.cursor='';
+  } else if(state==='failed'){
+    el.className='msg-tick failed';
+    el.innerHTML='<span style="color:#f44336;font-size:12px;" title="Tap to retry">⚠</span>';
+    el.style.cursor='pointer';
+    el.onclick=()=>{ retrySend(msgId); };
   } else {
     el.className='msg-tick sent';
     el.innerHTML='<span style="color:#666;font-size:12px;">✓</span>';
+    el.onclick=null; el.style.cursor='';
   }
 }
 
@@ -3630,32 +3723,50 @@ window.showReplyBar=function(text){
 
 // ===== FILE SEND — Sirf Images =====
 window.sendFile=async function(inp){
-  const file = inp.files[0];
-  if(!file || !currentChatId) return;
+  const files = Array.from(inp.files||[]);
+  if(!files.length || !currentChatId) { inp.value=''; return; }
+
+  const MAX_PER_SEND = 5;
+  let selected = files;
+  if(files.length > MAX_PER_SEND){
+    selected = files.slice(0, MAX_PER_SEND);
+    toast(`Ek baar mein max ${MAX_PER_SEND} photos hi bhej sakte ho — pehli ${MAX_PER_SEND} bhej raha hoon`);
+  }
   inp.value='';
 
-  if(!file.type.startsWith('image/')) { toast('Sirf photos bhej sakte ho'); return; }
+  const capturedReply = replyTo;
+  if(replyTo) cancelReply();
 
   const MAX_IMG = 10*1024*1024; // 10MB
-  if(file.size > MAX_IMG){ toast('Image 10MB se choti honi chahiye'); return; }
-
-  toast('Sending photo... ⏳');
-
-  const reader = new FileReader();
-  reader.onload = async e => {
-    const res = e.target.result;
-    const t = getTime();
-    compressAndSend(res, file, t);
-  };
-  reader.onerror = () => toast('Could not read file');
-  reader.readAsDataURL(file);
+  for(const file of selected){
+    if(!file.type.startsWith('image/')) { toast('Sirf photos bhej sakte ho'); continue; }
+    if(file.size > MAX_IMG){ toast('Image 10MB se choti honi chahiye'); continue; }
+    await new Promise((resolve)=>{
+      const reader = new FileReader();
+      reader.onload = e => {
+        const res = e.target.result;
+        const t = getTime();
+        compressAndSend(res, file, t, capturedReply);
+        resolve();
+      };
+      reader.onerror = () => { toast('Could not read file'); resolve(); };
+      reader.readAsDataURL(file);
+    });
+  }
 };
 
-async function compressAndSend(dataUrl, file, t){
+async function compressAndSend(dataUrl, file, t, replyData){
   const chatId = currentChatId; // capture at call time
+  const finishSend = (finalDataUrl)=>{
+    const d={type:'image',data:finalDataUrl,from:myId,name:myName,time:t};
+    if(replyData) d.replyTo={text:replyData.text,msgId:replyData.msgId};
+    pushMsgOptimistic(chatId, d, (key)=>{
+      addImgMsg(finalDataUrl, myId, t, key, d.replyTo||null);
+    });
+  };
   try{
     const img=new Image();
-    img.onload=async function(){
+    img.onload=function(){
       const canvas=document.createElement('canvas');
       const MAX_DIM=1280;
       let w=img.width, h=img.height;
@@ -3666,19 +3777,12 @@ async function compressAndSend(dataUrl, file, t){
       canvas.width=w; canvas.height=h;
       canvas.getContext('2d').drawImage(img,0,0,w,h);
       const compressed=canvas.toDataURL('image/jpeg',0.75);
-      const d={type:'image',data:compressed,from:myId,name:myName,time:t};
-      await sendChatMessage(chatId,d);
-      toast('Photo bhej di ✓');
+      finishSend(compressed);
     };
-    img.onerror=async function(){
-      // fallback — send as-is
-      const d={type:'image',data:dataUrl,from:myId,name:myName,time:t};
-      await sendChatMessage(chatId,d);
-    };
+    img.onerror=function(){ finishSend(dataUrl); };
     img.src=dataUrl;
   }catch(e){
-    const d={type:'image',data:dataUrl,from:myId,name:myName,time:t};
-    await sendChatMessage(chatId,d);
+    finishSend(dataUrl);
   }
 }
 
@@ -4036,17 +4140,27 @@ window.sendGif=async function(gifUrl){
   closeGifPicker();
   if(isBlocked(currentChatId)){ toast('You have blocked this user 🚫'); return; }
   const t=getTime();
+  const chatId = currentChatId;
+  const capturedReply = replyTo;
+  if(replyTo) cancelReply();
   const d={type:'gif', url:gifUrl, from:myId, name:myName, time:t};
-  await sendChatMessage(currentChatId, d);
-  toast('GIF bhej di ✓');
+  if(capturedReply) d.replyTo={text:capturedReply.text,msgId:capturedReply.msgId};
+  pushMsgOptimistic(chatId, d, (key)=>{
+    addGifMsg(gifUrl, myId, t, key, d.replyTo||null);
+  });
 };
 
-function addGifMsg(url, fromUid, time, msgKey){
+function addGifMsg(url, fromUid, time, msgKey, replyData){
   const area=document.getElementById('msgsArea');
   const isMe = fromUid === myId;
   const w=document.createElement('div');
   w.className='msg-wrap '+(isMe?'me':'them');
   if(msgKey) w.dataset.msgid=msgKey;
+
+  let replyHtml='';
+  if(replyData&&replyData.text){
+    replyHtml=`<div class="reply-preview">↩ ${escH(replyData.text.substring(0,60))}</div>`;
+  }
 
   const imgEl=document.createElement('img');
   imgEl.style.cssText='max-width:220px;max-height:240px;border-radius:14px;object-fit:cover;cursor:pointer;display:block;';
@@ -4060,11 +4174,22 @@ function addGifMsg(url, fromUid, time, msgKey){
 
   const meta=document.createElement('div');
   meta.className='msg-meta';
-  meta.innerHTML=`<span class="msg-time">${time||''}</span>${isMe?`<span class="msg-tick sent"><span style="color:#666;font-size:12px;">✓</span></span>`:''}`;
+  const tickId='tick-'+(msgKey||('gif-'+Date.now()));
+  meta.innerHTML=`<span class="msg-time">${time||''}</span>${isMe?`<span class="msg-tick sent" id="${tickId}"><span style="color:#666;font-size:12px;">✓</span></span>`:''}`;
 
+  if(replyHtml) w.insertAdjacentHTML('beforeend', replyHtml);
   w.appendChild(imgEl);
   w.appendChild(dlBtn);
   w.appendChild(meta);
+
+  // Swipe to reply
+  let startX=0;
+  w.addEventListener('touchstart',e=>startX=e.touches[0].clientX,{passive:true});
+  w.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-startX;
+    if((dx>60&&!isMe)||(dx<-60&&isMe)){ replyTo={text:'🎞️ GIF',msgId:msgKey}; showReplyBar('🎞️ GIF'); }
+  });
+
   area.appendChild(w);
   area.scrollTop=area.scrollHeight;
 }
@@ -4294,11 +4419,21 @@ window.deleteSelectedMsgs = async function() {
 const _appStartTime = Date.now();
 
 function handleAuthUser(user) {
+  if(!user) {
+    if(_authHandled) return; // already fully initialized aur ab genuinely logged out hai
+    // Firebase kabhi kabhi PEHLI baar null bhejta hai jab tak saved session load ho raha hota hai.
+    // Turant login screen dikhane ke bajaye, thoda ruk ke dekhte hain — asli user event aata hai kya.
+    if(window._authNullGrace) return; // pehle se wait ho raha hai
+    window._authNullGrace = setTimeout(()=>{
+      window._authNullGrace = null;
+      if(!_authHandled){ _authHandled = true; showScreen('googleLogin'); }
+    }, 1200);
+    return;
+  }
+  // Asli user mil gaya — agar null-wait chal raha tha, cancel kar do
+  if(window._authNullGrace){ clearTimeout(window._authNullGrace); window._authNullGrace=null; }
   if(_authHandled) return;
   _authHandled = true;
-
-  if(!user) { showScreen('googleLogin'); return; }
-
   const shortId = user.uid.substr(0,6).toUpperCase();
   myId = shortId;
   localStorage.setItem('dc_my_id', shortId);
