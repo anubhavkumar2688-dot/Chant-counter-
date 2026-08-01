@@ -792,16 +792,16 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 <div class="screen active" id="onboard">
   <div class="ob-slide" id="obSlide">
     <div class="ob-icon" id="obIcon">🕉️</div>
-    <div class="ob-title" id="obTitle">Daily Chant mein swagat hai!</div>
-    <div class="ob-desc" id="obDesc">Ye app hai mantra chanting ke liye — roze apna jaap karo aur count rakho!</div>
+    <div class="ob-title" id="obTitle">Welcome to Daily Chant!</div>
+    <div class="ob-desc" id="obDesc">This app is for mantra chanting — do your daily jaap and keep count!</div>
     <div class="ob-demo" id="obDemo" style="display:none"></div>
     <div class="ob-dots">
       <div class="ob-dot active" id="od0"></div>
       <div class="ob-dot" id="od1"></div>
       <div class="ob-dot" id="od2"></div>
     </div>
-    <button class="ob-btn" id="obNextBtn" onclick="obNext()">Aage →</button>
-    <div class="ob-skip" id="obSkipBtn" onclick="skipOnboard()">Skip karo</div>
+    <button class="ob-btn" id="obNextBtn" onclick="obNext()">Next →</button>
+    <div class="ob-skip" id="obSkipBtn" onclick="skipOnboard()">Skip</div>
   </div>
 </div>
 
@@ -813,8 +813,8 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 
     <div style="font-size:72px;margin-bottom:20px;filter:drop-shadow(0 8px 20px rgba(200,65,10,0.2));animation:float 3s ease-in-out infinite;">📿</div>
     <div style="font-size:12px;font-weight:700;letter-spacing:4px;text-transform:uppercase;background:linear-gradient(90deg,var(--saffron),var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;">Daily Chant</div>
-    <div style="font-size:22px;font-weight:700;color:var(--brown2);margin-bottom:8px;text-align:center;line-height:1.2;">Swagat hai! 🙏</div>
-    <div style="font-size:13px;color:var(--brown);text-align:center;margin-bottom:40px;line-height:1.7;max-width:260px;opacity:0.85;">Google account se login karo<br>Ek tap mein — safe aur easy</div>
+    <div style="font-size:22px;font-weight:700;color:var(--brown2);margin-bottom:8px;text-align:center;line-height:1.2;">Welcome! 🙏</div>
+    <div style="font-size:13px;color:var(--brown);text-align:center;margin-bottom:40px;line-height:1.7;max-width:260px;opacity:0.85;">Login with your Google account<br>One tap — safe and easy</div>
 
     <div style="width:100%;max-width:320px;">
       <button id="googleLoginBtn" onclick="signInWithGoogle()"
@@ -831,9 +831,9 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 <!-- CREATE PASSWORD -->
 <div class="screen" id="createPass">
   <div class="cp-top">
-    <div class="cp-step" id="cpStep">PASSWORD BANAO</div>
-    <div class="cp-title" id="cpTitle">Apna Password Set Karo</div>
-    <div class="cp-sub" id="cpSub">4 digit ka password — sirf tum jaano!</div>
+    <div class="cp-step" id="cpStep">CREATE PASSWORD</div>
+    <div class="cp-title" id="cpTitle">Set Your Password</div>
+    <div class="cp-sub" id="cpSub">A 4-digit password — only you should know it!</div>
   </div>
   <div class="cp-dots">
     <div class="cp-dot" id="c0"></div>
@@ -860,22 +860,22 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 <!-- PROFILE SETUP -->
 <div class="screen" id="profileSetup">
   <div class="ps-header">
-    <div class="ps-title">Profile Setup karo</div>
-    <div class="ps-sub">Ek baar set karo — baad mein bhi change kar sakte ho</div>
+    <div class="ps-title">Set Up Your Profile</div>
+    <div class="ps-sub">Set it once — you can change it later too</div>
   </div>
   <div class="ps-body">
     <div class="ps-avatar-wrap">
       <div class="ps-avatar" id="psAvatar" onclick="document.getElementById('avatarInput').click()">
         👤
       </div>
-      <div class="ps-avatar-hint">Tap karke photo lagao (optional)</div>
+      <div class="ps-avatar-hint">Tap to add a photo (optional)</div>
     </div>
     <div>
-      <div class="ps-label">Tera Naam</div>
-      <input class="ps-input" id="psName" placeholder="Apna naam likho..." autocomplete="off">
+      <div class="ps-label">Your Name</div>
+      <input class="ps-input" id="psName" placeholder="Enter your name..." autocomplete="off">
     </div>
 
-    <button class="ps-save-btn" onclick="saveProfile()">Save & Shuru Karo 🙏</button>
+    <button class="ps-save-btn" onclick="saveProfile()">Save & Get Started 🙏</button>
   </div>
 </div>
 
@@ -1151,10 +1151,10 @@ body { font-family:'Poppins',sans-serif; background:var(--cream); color:var(--br
 <!-- MANTRA MODAL -->
 <div class="modal-overlay" id="mantraModal">
   <div class="modal-sheet">
-    <div class="modal-title">🕉️ Mantra Choose karo</div>
+    <div class="modal-title">🕉️ Choose Mantra</div>
     <div id="mantraListEl"></div>
     <div class="mantra-add-row">
-      <input class="mantra-add-inp" id="mantraAddInp" placeholder="Apna mantra add karo..." autocomplete="off">
+      <input class="mantra-add-inp" id="mantraAddInp" placeholder="Add your own mantra..." autocomplete="off">
       <button class="mantra-add-btn" onclick="addMantra()">Add</button>
     </div>
     <button class="modal-close" onclick="closeMantraModal()">Close</button>
@@ -1335,9 +1335,9 @@ let _authHandled = false;
 // ===== ONBOARDING — Firebase ki zarurat nahi =====
 let obStep=0;
 const obSlides=[
-  {icon:'🕉️',title:'Daily Chant mein swagat hai!',desc:'Ye app hai mantra chanting ke liye — roze apna jaap karo aur count rakho!',demo:null},
-  {icon:'📿',title:'Mantra Choose karo',desc:'10 mantras pehle se hain — ya apna mantra add karo. OM button tap karo aur count shuru!',demo:'Mantra pill pe tap karo → choose karo'},
-  {icon:'🔐',title:'Password se Suraksha',desc:'Apna 4-digit password banao — sirf tum jaano. App safe hai!',demo:null},
+  {icon:'🕉️',title:'Welcome to Daily Chant!',desc:'This app is for mantra chanting — do your daily jaap and keep count!',demo:null},
+  {icon:'📿',title:'Choose Your Mantra',desc:'10 mantras are ready to use — or add your own. Tap the OM button to start counting!',demo:'Tap the mantra pill → choose one'},
+  {icon:'🔐',title:'Protected by Password',desc:'Set your own 4-digit password — only you know it. Your app stays safe!',demo:null},
 ];
 window.obNext=function(){
   obStep++;
@@ -1349,7 +1349,7 @@ window.obNext=function(){
   const demoEl=document.getElementById('obDemo');
   if(s.demo){demoEl.style.display='block';demoEl.textContent=s.demo;}
   else{demoEl.style.display='none';}
-  document.getElementById('obNextBtn').textContent=obStep===obSlides.length-1?'Shuru Karo →':'Aage →';
+  document.getElementById('obNextBtn').textContent=obStep===obSlides.length-1?'Get Started →':'Next →';
   for(let i=0;i<3;i++){document.getElementById('od'+i).classList.toggle('active',i===obStep);}
 };
 window.skipOnboard=window.skipOnband=function(){
@@ -1552,9 +1552,9 @@ function updateCpDots(err=false) {
 async function checkCpPin() {
   if(cpMode==='create') {
     cpFirst=cpPin; cpPin='';
-    document.getElementById('cpStep').textContent='CONFIRM KARO';
-    document.getElementById('cpTitle').textContent='Dobara Enter Karo';
-    document.getElementById('cpSub').textContent='Password confirm karo';
+    document.getElementById('cpStep').textContent='CONFIRM';
+    document.getElementById('cpTitle').textContent='Enter Again';
+    document.getElementById('cpSub').textContent='Confirm your password';
     updateCpDots();
     cpMode='confirm';
   } else if(cpMode==='confirm') {
@@ -1567,7 +1567,7 @@ async function checkCpPin() {
       showScreen('profileSetup');
     } else {
       updateCpDots(true);
-      setTimeout(()=>{ cpPin=''; updateCpDots(); document.getElementById('cpStep').textContent='DOBARA BANAO'; document.getElementById('cpTitle').textContent='Match nahi hua! Try karo'; cpFirst=''; cpMode='create'; },800);
+      setTimeout(()=>{ cpPin=''; updateCpDots(); document.getElementById('cpStep').textContent='TRY AGAIN'; document.getElementById('cpTitle').textContent="Didn't match! Try again"; cpFirst=''; cpMode='create'; },800);
     }
   } else if(cpMode==='verify') {
     const hashed = await hashPin(cpPin);
@@ -1587,8 +1587,8 @@ async function checkCpPin() {
     const hashed = await hashPin(cpPin);
     if(hashed===userPassword) {
       cpFirst=''; cpPin=''; cpMode='change2';
-      document.getElementById('cpTitle').textContent='Naya Password Set Karo';
-      document.getElementById('cpSub').textContent='4 digit naya password';
+      document.getElementById('cpTitle').textContent='Set New Password';
+      document.getElementById('cpSub').textContent='4-digit new password';
       updateCpDots();
     } else {
       updateCpDots(true);
@@ -1596,7 +1596,7 @@ async function checkCpPin() {
     }
   } else if(cpMode==='change2') {
     cpFirst=cpPin; cpPin=''; cpMode='change3';
-    document.getElementById('cpTitle').textContent='Confirm Naya Password';
+    document.getElementById('cpTitle').textContent='Confirm New Password';
     updateCpDots();
   } else if(cpMode==='change3') {
     if(cpPin===cpFirst) {
@@ -1729,7 +1729,7 @@ function handleTap() {
 
   // Mala complete!
   if(count>=malaTarget) {
-    setTimeout(()=>toast('🎉 Ek Mala complete! '+malaTarget+' jaap ho gaye!'),300);
+    setTimeout(()=>toast('🎉 One Mala complete! '+malaTarget+' jaap done!'),300);
     count=0; // reset for next mala
     localStorage.setItem('dc_count','0');
     setTimeout(()=>updateCountUI(),350);
@@ -1805,8 +1805,8 @@ function askPasswordThenOpenChat() {
   // Password verify karke chat section kholo
   cpMode='verify'; cpPin='';
   document.getElementById('cpStep').textContent='SECRET SECTION';
-  document.getElementById('cpTitle').textContent='Password Daalo';
-  document.getElementById('cpSub').textContent='Chat section unlock karne ke liye';
+  document.getElementById('cpTitle').textContent='Enter Password';
+  document.getElementById('cpSub').textContent='To unlock the chat section';
   updateCpDots();
   // cpMode verify ke baad counter pe wapas nahi — chat list pe jayega
   _afterVerifyGoChat=true;
@@ -1986,11 +1986,11 @@ function listenCallStatus(roomId) {
   _callStatusListener = onValue(ref(db, `calls/${roomId}/status`), snap => {
     const status = snap.val();
     if(status==='rejected') {
-      if(callRole==='caller') toast('Call decline kar diya ❌');
+      if(callRole==='caller') toast('Call declined ❌');
       endCall(true);
     } else if(status==='ended') {
       if(pc || currentCallRoomId) {
-        toast('Call khatam ✓');
+        toast('Call ended ✓');
         endCall(true);
       }
     }
@@ -2095,7 +2095,7 @@ async function logCallMessage(peerUid, type, outcome, durationSecs) {
 
 async function startCall(uid, type) {
   if(!uid) return;
-  if(pc || currentCallRoomId) { toast('Pehle se ek call chal rahi hai'); return; }
+  if(pc || currentCallRoomId) { toast('A call is already in progress'); return; }
   if(isBlocked(uid)) { toast('You have blocked this user 🚫'); return; }
 
   const name = currentChatName || (following[uid]&&following[uid].name) || uid;
@@ -2109,7 +2109,7 @@ async function startCall(uid, type) {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio:true, video: type==='video' ? {facingMode:'user', width:{ideal:480,max:640}, height:{ideal:360,max:480}, frameRate:{ideal:15,max:20}} : false });
   } catch(e) {
-    toast('Mic/Camera access allow karo call ke liye 🎙️');
+    toast('Please allow mic/camera access for the call 🎙️');
     currentCallPeer=null; currentCallRoomId=null; callRole=null;
     return;
   }
@@ -2128,7 +2128,7 @@ async function startCall(uid, type) {
     await set(ref(db,`calls/${roomId}/status`), 'ringing');
   } catch(e) {
     console.error('startCall error:', e);
-    toast('Call start nahi ho payi: ' + (e && e.message ? e.message : e), 6000);
+    toast('Call could not start: ' + (e && e.message ? e.message : e), 6000);
     endCall(true);
     return;
   }
@@ -2151,7 +2151,7 @@ async function startCall(uid, type) {
   callRingTimeout = setTimeout(()=>{
     if(callRole==='caller' && !callStartTime) {
       set(ref(db,`calls/${roomId}/status`),'missed').catch(()=>{});
-      toast('Koi jawab nahi ☎️');
+      toast('No answer ☎️');
       endCall(true);
     }
   }, 45000);
@@ -2183,7 +2183,7 @@ window.acceptCall = async function() {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({ audio:true, video: callType==='video' ? {facingMode:'user', width:{ideal:480,max:640}, height:{ideal:360,max:480}, frameRate:{ideal:15,max:20}} : false });
   } catch(e) {
-    toast('Mic/Camera access allow karo 🎙️');
+    toast('Please allow mic/camera access 🎙️');
     declineCall();
     return;
   }
@@ -2195,7 +2195,7 @@ window.acceptCall = async function() {
   try {
     const offerSnap = await get(ref(db,`calls/${roomId}/offer`));
     const offerData = offerSnap.val();
-    if(!offerData) { toast('Call expire ho gayi'); endCall(true); return; }
+    if(!offerData) { toast('Call expired'); endCall(true); return; }
     await pc.setRemoteDescription({ type:'offer', sdp: offerData.sdp });
 
     const answer = await pc.createAnswer();
@@ -2204,7 +2204,7 @@ window.acceptCall = async function() {
     await set(ref(db,`calls/${roomId}/status`), 'accepted');
   } catch(e) {
     console.error('acceptCall error:', e);
-    toast('Call connect nahi ho payi: ' + (e && e.message ? e.message : e), 6000);
+    toast('Call could not connect: ' + (e && e.message ? e.message : e), 6000);
     endCall(true);
     return;
   }
@@ -2542,7 +2542,7 @@ window.showChatLongPressMenu = function(uid, name) {
 
 window.deleteSingleChat = function(uid) {
   const chats = JSON.parse(localStorage.getItem('dc_chats')||'{}');
-  const name = chats[uid]?.name || uid;
+  const name = (chats[uid] && chats[uid].name) || uid;
   if(!confirm('Delete chat with '+name+'?')) return;
   delete chats[uid];
   localStorage.setItem('dc_chats', JSON.stringify(chats));
@@ -3059,7 +3059,7 @@ window.unblockUser = async function(uid, name) {
   setBlockedLocal(uid, false);
   // Restore name from saved data if missing
   const blockedData = JSON.parse(localStorage.getItem('dc_blocked_data')||'{}');
-  const savedName = blockedData[uid]?.name || name;
+  const savedName = (blockedData[uid] && blockedData[uid].name) || name;
   delete blockedData[uid];
   localStorage.setItem('dc_blocked_data', JSON.stringify(blockedData));
   // Automatically wapas following mein add karo — no re-request needed
@@ -3283,7 +3283,7 @@ window.showUserOptions = function(uid, name) {
 };
 
 window.unfollowUser = async function(uid, name) {
-  if(!confirm('Delete friend ' + name + '? Dono ki list se hat jaayega.')) return;
+  if(!confirm('Delete friend ' + name + '? This will remove them from both lists.')) return;
 
   // 1. Meri local following se hatao
   delete following[uid];
@@ -3369,7 +3369,7 @@ function renderPeople() {
     blockedKeys.forEach(uid => {
       const blockedData = JSON.parse(localStorage.getItem('dc_blocked_data')||'{}');
       const chats = JSON.parse(localStorage.getItem('dc_chats')||'{}');
-      const name = blockedData[uid]?.name || chats[uid]?.name || uid;
+      const name = (blockedData[uid] && blockedData[uid].name) || (chats[uid] && chats[uid].name) || uid;
       const div = document.createElement('div');
       div.className='user-row';
       div.innerHTML=`
@@ -3735,7 +3735,7 @@ window.sendFile=async function(inp){
   let selected = files;
   if(files.length > MAX_PER_SEND){
     selected = files.slice(0, MAX_PER_SEND);
-    toast(`Ek baar mein max ${MAX_PER_SEND} photos hi bhej sakte ho — pehli ${MAX_PER_SEND} bhej raha hoon`);
+    toast(`You can send max ${MAX_PER_SEND} photos at once — sending the first ${MAX_PER_SEND}`);
   }
   inp.value='';
 
@@ -3744,8 +3744,8 @@ window.sendFile=async function(inp){
 
   const MAX_IMG = 10*1024*1024; // 10MB
   for(const file of selected){
-    if(!file.type.startsWith('image/')) { toast('Sirf photos bhej sakte ho'); continue; }
-    if(file.size > MAX_IMG){ toast('Image 10MB se choti honi chahiye'); continue; }
+    if(!file.type.startsWith('image/')) { toast('You can only send photos'); continue; }
+    if(file.size > MAX_IMG){ toast('Image must be smaller than 10MB'); continue; }
     await new Promise((resolve)=>{
       const reader = new FileReader();
       reader.onload = e => {
@@ -3832,7 +3832,7 @@ window.searchUserFromSettings=function(val){
 
   // Debounce — 400ms baad search karo
   clearTimeout(_settingsSearchTimer);
-  res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">🔍 Dhundh raha hai...</div>';
+  res.innerHTML='<div style="color:var(--chat-muted);font-size:12px;padding:4px;">🔍 Searching...</div>';
   _settingsSearchTimer = setTimeout(async ()=>{
     try {
       // Timeout wrapper — 8 seconds
@@ -3885,9 +3885,9 @@ window.copyMyId=function(){
 
 window.changePassword=function(){
   cpMode='change'; cpPin='';
-  document.getElementById('cpStep').textContent='PEHLE PURANA DAALO';
-  document.getElementById('cpTitle').textContent='Purana Password Daalo';
-  document.getElementById('cpSub').textContent='Verify karo';
+  document.getElementById('cpStep').textContent='ENTER OLD FIRST';
+  document.getElementById('cpTitle').textContent='Enter Old Password';
+  document.getElementById('cpSub').textContent='Verify';
   updateCpDots();
   showScreen('createPass');
 };
@@ -4069,7 +4069,7 @@ window.openGifPicker=function(){
   const inp=document.getElementById('gifSearchInp');
   inp.value='';
   document.querySelectorAll('.gif-chip').forEach(c=>c.classList.remove('active'));
-  document.querySelector('.gif-chip[data-q=""]')?.classList.add('active');
+  const _defChip1=document.querySelector('.gif-chip[data-q=""]'); if(_defChip1) _defChip1.classList.add('active');
   setTimeout(()=>inp.focus(), 150);
   loadTrendingGifs();
 };
@@ -4087,7 +4087,7 @@ window.gifSearchDebounced=function(){
   const q=document.getElementById('gifSearchInp').value.trim();
   _gifSearchTimer=setTimeout(()=>{
     document.querySelectorAll('.gif-chip').forEach(c=>c.classList.remove('active'));
-    if(q) searchGifs(q); else { document.querySelector('.gif-chip[data-q=""]')?.classList.add('active'); loadTrendingGifs(); }
+    if(q) searchGifs(q); else { const _defChip2=document.querySelector('.gif-chip[data-q=""]'); if(_defChip2) _defChip2.classList.add('active'); loadTrendingGifs(); }
   }, 400);
 };
 
@@ -4127,7 +4127,7 @@ async function fetchGifPage(isFirstLoad){
     _gifState.offset += results.length;
     if(results.length < GIF_PAGE_SIZE) _gifState.done = true;
   }catch(e){
-    if(isFirstLoad) grid.innerHTML='<div class="gif-grid-msg">GIFs load nahi hue. API key check karo.</div>';
+    if(isFirstLoad) grid.innerHTML='<div class="gif-grid-msg">GIFs failed to load. Check API key.</div>';
   }finally{
     _gifState.loading = false;
   }
@@ -4140,8 +4140,9 @@ function renderGifResults(results, isFirstLoad){
     if(loader) loader.remove();
   }
   results.forEach(r=>{
-    const previewUrl = r.images?.fixed_height_small?.url || r.images?.fixed_height?.url || r.images?.original?.url;
-    const fullUrl = r.images?.original?.url || previewUrl;
+    const _imgs = r.images || {};
+    const previewUrl = (_imgs.fixed_height_small && _imgs.fixed_height_small.url) || (_imgs.fixed_height && _imgs.fixed_height.url) || (_imgs.original && _imgs.original.url);
+    const fullUrl = (_imgs.original && _imgs.original.url) || previewUrl;
     if(!previewUrl) return;
     const img=document.createElement('img');
     img.src=previewUrl;
@@ -4280,7 +4281,7 @@ window.ctxDelete=async function(){
   // Firebase se delete — dono taraf se (apna aur dusre ka dono)
   const roomId=chatRoomId(myId,currentChatId);
   await remove(ref(db,`chats/${roomId}/messages/${msgId}`)).catch(()=>{});
-  toast('Message delete ho gaya ✓');
+  toast('Message deleted ✓');
 };
 window.ctxReply=function(){
   if(_ctxMsg){replyTo={text:_ctxMsg.text||'',msgId:_ctxMsg.id};showReplyBar(_ctxMsg.text||'');}
@@ -4434,7 +4435,7 @@ window.cancelSelectMode = function() {
 };
 
 window.deleteSelectedMsgs = async function() {
-  if(_selectedMsgIds.size === 0) { toast('Koi message select nahi'); return; }
+  if(_selectedMsgIds.size === 0) { toast('No message selected'); return; }
   const roomId = chatRoomId(myId, currentChatId);
   const ids = [..._selectedMsgIds];
   cancelSelectMode();
